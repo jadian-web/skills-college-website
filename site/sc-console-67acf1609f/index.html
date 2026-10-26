@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en-ZA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="referrer" content="no-referrer">
+<title>Skills College</title>
+<link rel="icon" type="image/png" href="/assets/img/favicon.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="console.css">
+</head>
+<body>
+
+<!-- ============ SIGN IN ============ -->
+<section class="login" id="login" hidden>
+  <form class="login-card" id="login-form" autocomplete="on">
+    <img src="/assets/img/skills-college-logo.webp" alt="Skills College" width="190">
+    <h1>Management portal</h1>
+    <p class="muted">Sign in to manage website images and blog posts.</p>
+    <label for="u">Username</label>
+    <input id="u" name="username" autocomplete="username" required>
+    <label for="p">Password</label>
+    <input id="p" name="password" type="password" autocomplete="current-password" required>
+    <p class="error" id="login-error" role="alert" hidden></p>
+    <button class="btn primary" type="submit" id="login-btn">Sign in</button>
+  </form>
+</section>
+
+<!-- ============ APP ============ -->
+<div class="app" id="app" hidden>
+  <header class="topbar">
+    <img src="/assets/img/skills-college-logo-white.png" alt="Skills College" width="130">
+    <nav class="tabs" role="tablist">
+      <button role="tab" id="tab-images" aria-selected="true" data-tab="images">Images</button>
+      <button role="tab" id="tab-posts" aria-selected="false" data-tab="posts">Blog posts</button>
+    </nav>
+    <div class="topbar-right">
+      <a href="/" target="_blank" rel="noopener">View website</a>
+      <button class="btn ghost small" id="logout">Sign out</button>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <!-- IMAGES -->
+    <section id="panel-images" data-panel="images">
+      <div class="panel-head">
+        <div><h1>Site images</h1><p class="muted">Every image used on the website. Replace one to update it everywhere it appears.</p></div>
+      </div>
+      <div class="slot-grid" id="slots"><p class="muted">Loading&hellip;</p></div>
+
+      <div class="panel-head mt">
+        <div><h2>Image library</h2><p class="muted">Upload new images to use in blog posts and as article covers. JPG, PNG, WebP or GIF up to 4.5 MB.</p></div>
+        <label class="btn primary">Upload images<input type="file" id="lib-input" accept="image/jpeg,image/png,image/webp,image/gif" multiple hidden></label>
+      </div>
+      <div class="dropzone" id="dropzone">Drop images here to upload</div>
+      <div class="lib-grid" id="library"></div>
+    </section>
+
+    <!-- POSTS -->
+    <section id="panel-posts" data-panel="posts" hidden>
+      <div id="post-list-view">
+        <div class="panel-head">
+          <div><h1>Blog posts</h1><p class="muted">Published posts appear on the Resources page. Drafts stay private.</p></div>
+          <button class="btn primary" id="new-post">New post</button>
+        </div>
+        <div class="table-wrap"><table class="posts">
+          <thead><tr><th>Headline</th><th>Category</th><th>Date</th><th>Status</th><th><span class="sr">Actions</span></th></tr></thead>
+          <tbody id="post-rows"><tr><td colspan="5" class="muted">Loading&hellip;</td></tr></tbody>
+        </table></div>
+      </div>
+
+      <form id="post-form" hidden>
+        <div class="panel-head">
+          <div><button type="button" class="link-btn" id="back">&larr; All posts</button><h1 id="editor-title">New post</h1></div>
+          <div class="row-actions">
+            <a class="btn ghost" id="view-live" target="_blank" rel="noopener" hidden>View on site</a>
+            <button type="submit" class="btn primary">Save post</button>
+          </div>
+        </div>
+
+        <div class="editor-grid">
+          <div class="editor-main">
+            <label for="f-title">Headline <span class="req">*</span></label>
+            <input id="f-title" required maxlength="200">
+            <label for="f-summary">Short summary</label>
+            <textarea id="f-summary" rows="3" maxlength="600" placeholder="One or two sentences shown on the Resources page"></textarea>
+
+            <label>Main content</label>
+            <div class="rte-toolbar" id="toolbar">
+              <button type="button" data-cmd="bold" title="Bold"><b>B</b></button>
+              <button type="button" data-cmd="italic" title="Italic"><i>I</i></button>
+              <button type="button" data-block="h2" title="Heading">H2</button>
+              <button type="button" data-block="h3" title="Sub-heading">H3</button>
+              <button type="button" data-block="p" title="Paragraph">P</button>
+              <button type="button" data-cmd="insertUnorderedList" title="Bulleted list">&bull; List</button>
+              <button type="button" data-cmd="insertOrderedList" title="Numbered list">1. List</button>
+              <button type="button" data-block="blockquote" title="Quote">&ldquo; Quote</button>
+              <button type="button" data-action="link" title="Add link">Link</button>
+              <button type="button" data-action="image" title="Insert image from library">Image</button>
+            </div>
+            <div class="rte" id="f-body" contenteditable="true" aria-label="Main content"></div>
+
+            <label for="f-takeaways">Key takeaways <span class="hint">one per line</span></label>
+            <textarea id="f-takeaways" rows="4"></textarea>
+
+            <label>Sources or reference links</label>
+            <div id="sources"></div>
+            <button type="button" class="link-btn" id="add-source">+ Add source</button>
+          </div>
+
+          <aside class="editor-side">
+            <div class="side-card">
+              <label for="f-status">Status</label>
+              <select id="f-status"><option value="draft">Draft (hidden)</option><option value="published">Published</option></select>
+              <label for="f-date">Published date</label>
+              <input id="f-date" type="date">
+              <label for="f-category">Category</label>
+              <select id="f-category"></select>
+              <label for="f-audience">Call to action for</label>
+              <select id="f-audience"><option value="employers">Employers (Book a consultation)</option><option value="learners">Learners (Find opportunities)</option><option value="both">Both</option></select>
+              <label for="f-slug">Web address</label>
+              <div class="slug"><span>/resources/article/?slug=</span><input id="f-slug" pattern="[a-z0-9-]+"></div>
+            </div>
+            <div class="side-card">
+              <label>Cover image</label>
+              <div class="cover" id="cover-preview"><span class="muted">No cover image</span></div>
+              <div class="row-actions">
+                <button type="button" class="btn ghost small" id="pick-cover">Choose</button>
+                <button type="button" class="btn ghost small" id="clear-cover">Remove</button>
+              </div>
+              <label for="f-cover-alt">Cover description (alt text)</label>
+              <input id="f-cover-alt" maxlength="200">
+            </div>
+            <div class="side-card">
+              <label>Related services</label>
+              <div id="related" class="checks"></div>
+            </div>
+          </aside>
+        </div>
+      </form>
+    </section>
+  </main>
+</div>
+
+<!-- Library picker -->
+<dialog id="picker">
+  <div class="dialog-head"><h2>Choose an image</h2><button type="button" class="link-btn" id="picker-close">Close</button></div>
+  <label class="btn ghost small">Upload new<input type="file" id="picker-upload" accept="image/jpeg,image/png,image/webp,image/gif" hidden></label>
+  <div class="lib-grid pick" id="picker-grid"></div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<script src="console.js" defer></script>
+</body>
+</html>

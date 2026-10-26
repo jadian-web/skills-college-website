@@ -1,0 +1,25 @@
+# Old WordPress URLs -> new pages (301 = permanent)
+/about/company-profile/                      /about/                                   301
+/about/ecovadis-award/                       /about/accreditations-quality/            301
+/about/accredited-training/                  /for-employers/accredited-training/       301
+/about/quality-assurance/                    /about/accreditations-quality/            301
+/about/testimonials/                         /case-studies/                            301
+/about/meet-the-team/                        /about/team/                              301
+/about/faqs/                                 /contact/                                 301
+/accreditations/                             /about/accreditations-quality/            301
+/b-bbee-skills-spend-strategy/               /for-employers/skills-development-strategy/  301
+/our-solutions/higher-educational-bursaries/ /for-employers/higher-education-bursaries/   301
+/our-solutions/disabled-solutions/           /for-employers/disability-skills-development/ 301
+/our-solutions/learnership-internships/      /for-employers/learnerships-internships/  301
+/our-solutions/b-bbee-absorbtion/            /for-employers/b-bbee-absorption/         301
+/qcto/what-is-the-qtco/                      /qcto/what-is-qcto/                       301
+/qcto/the-seta-qcto-transition/              /qcto/seta-to-qcto/                       301
+/qcto/typical-qcto-curriculum/               /qcto/curriculum/                         301
+/qcto/how-will-it-work/                      /qcto/employer-support/                   301
+/qcto/our-offering-to-you/                   /qcto/employer-support/                   301
+/qcto/our-accredited-learnerships/           /qcto/qualifications/                     301
+/qcto/skills-college-as-qcto-assessment-centre/ /qcto/assessment-centre/               301
+/contact-us/                                 /contact/                                 301
+/blog/                                       /resources/                               301
+/media/photo-gallery/                        /about/                                   301
+/campuses/                                   https://my.skillscollege.co.za            302

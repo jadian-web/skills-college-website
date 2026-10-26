@@ -1,0 +1,14 @@
+{
+  "name": "skills-college-website",
+  "private": true,
+  "type": "module",
+  "description": "Skills College website with private management portal (Netlify Functions + Netlify Blobs)",
+  "scripts": {},
+  "dependencies": {
+    "@netlify/blobs": "11.1.3",
+    "sanitize-html": "2.18.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
