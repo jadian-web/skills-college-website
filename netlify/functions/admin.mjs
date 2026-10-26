@@ -1,7 +1,7 @@
 // Management portal API: /api/admin/*
 // Every route except /login requires a valid signed session cookie.
 // State-changing requests also require the X-SC-Admin header (blocks cross-site form posts).
-import sanitizeHtml from "sanitize-html";
+import { sanitize } from "./lib/sanitize.mjs";
 import manifest from "./lib/media-manifest.mjs";
 import {
   verifyPassword, createSessionCookie, clearSessionCookie, readSession,
@@ -12,15 +12,7 @@ import { mediaStore, postsStore, stateStore, IMAGE_TYPES, MAX_BYTES, sniffImage,
 const CATEGORIES = ["QCTO", "B-BBEE Skills Development", "Learnerships & Internships", "Bursaries", "Funding & Grants",
   "Workplace Learning", "Compliance Updates", "Learner Guidance", "Company News"];
 
-const clean = (html) => sanitizeHtml(String(html || ""), {
-  allowedTags: ["p", "br", "h2", "h3", "h4", "strong", "b", "em", "i", "u", "ul", "ol", "li", "a", "blockquote", "img", "figure", "figcaption", "hr"],
-  allowedAttributes: { a: ["href", "target", "rel"], img: ["src", "alt"] },
-  allowedSchemes: ["http", "https", "mailto", "tel"],
-  allowedSchemesByTag: { img: [] },
-  allowProtocolRelative: false,
-  exclusiveFilter: (frame) => frame.tag === "img" && !/^\/media\//.test(frame.attribs.src || ""),
-  transformTags: { a: (tag, attribs) => ({ tagName: "a", attribs: { href: attribs.href, ...(/^https?:/.test(attribs.href || "") ? { target: "_blank", rel: "noopener" } : {}) } }) },
-});
+const clean = (html) => sanitize(html);
 const text = (v, max = 400) => String(v ?? "").replace(/[<>]/g, "").trim().slice(0, max);
 
 async function getState() { return (await stateStore().get("media-state", { type: "json" })) || { hidden: [] }; }
