@@ -2,7 +2,7 @@
 // Every route except /login requires a valid signed session cookie.
 // State-changing requests also require the X-SC-Admin header (blocks cross-site form posts).
 import sanitizeHtml from "sanitize-html";
-import manifest from "./lib/media-manifest.json" with { type: "json" };
+import manifest from "./lib/media-manifest.mjs";
 import {
   verifyPassword, createSessionCookie, clearSessionCookie, readSession,
   isLocked, recordFail, clearFails, json,
@@ -26,7 +26,7 @@ const text = (v, max = 400) => String(v ?? "").replace(/[<>]/g, "").trim().slice
 async function getState() { return (await stateStore().get("media-state", { type: "json" })) || { hidden: [] }; }
 async function setState(s) { await stateStore().setJSON("media-state", s); }
 
-export default async (req, context) => {
+async function handle(req, context) {
   const url = new URL(req.url);
   const route = url.pathname.replace(/^\/api\/admin\/?/, "").replace(/\/$/, "");
   const method = req.method.toUpperCase();
@@ -164,6 +164,22 @@ export default async (req, context) => {
   }
 
   return json({ error: "Not found." }, 404);
+}
+
+export default async (req, context) => {
+  const route = new URL(req.url).pathname.replace(/^\/api\/admin\/?/, "").replace(/\/$/, "");
+  // Public health check: shows whether the server parts are working (no private data)
+  if (route === "health") {
+    const out = { functions: "ok", node: process.version, storage: "unknown" };
+    try { await stateStore().get("health-check"); out.storage = "ok"; } catch (e) { out.storage = "error: " + (e && e.message || e); }
+    return json(out);
+  }
+  try {
+    return await handle(req, context);
+  } catch (e) {
+    console.error("portal error", e);
+    return json({ error: "Server error: " + ((e && e.message) || String(e)).slice(0, 300) }, 500);
+  }
 };
 
 export const config = { path: "/api/admin/*" };

@@ -25,7 +25,11 @@
       .then(function (r) {
         return r.json().catch(function () { return {}; }).then(function (data) {
           if (r.status === 401 && path !== "login") { showLogin("Your session has ended. Please sign in again."); throw new Error("signed out"); }
-          if (!r.ok) throw new Error(data.error || "Something went wrong (" + r.status + ").");
+          if (!r.ok) {
+            if (!data.error && (r.status === 502 || r.status === 404 || r.status === 405))
+              throw new Error("The portal's server functions are not responding (" + r.status + "). Open " + location.origin + "/api/admin/health and send the result to your developer.");
+            throw new Error(data.error || "Something went wrong (" + r.status + ").");
+          }
           return data;
         });
       });

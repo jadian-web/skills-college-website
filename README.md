@@ -47,3 +47,13 @@ Then redeploy. Changing SESSION_SECRET signs everyone out.
 - Images on pages load from `/media/<file>`: the portal's replacement if one
   exists, otherwise the original in `site/assets/img/`.
 - Blog posts appear on `/resources/` and open at `/resources/article/?slug=...`.
+
+## Troubleshooting
+Open `https://YOUR-SITE/api/admin/health` in a browser.
+- `{"functions":"ok", "storage":"ok"}` - everything is running.
+- Page not found - Netlify did not deploy the functions. Check that the site
+  is connected to the GitHub repository (not drag-and-drop) and that
+  `netlify.toml`, `package.json` and the `netlify` folder are at the top level
+  of the repository.
+- `storage: error ...` - send the message to your developer.
+Function logs: Netlify > your site > Logs > Functions > admin.

@@ -7,7 +7,7 @@ const out = (data, status = 200) => new Response(JSON.stringify(data), {
   status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "public, max-age=60" },
 });
 
-export default async (req) => {
+async function handle(req) {
   const url = new URL(req.url);
   const slug = url.pathname.replace(/^\/api\/posts\/?/, "").replace(/\/$/, "");
   const store = postsStore();
@@ -22,6 +22,11 @@ export default async (req) => {
     .map(({ body, takeaways, sources, ...rest }) => rest)
     .sort((a, b) => String(b.date).localeCompare(String(a.date)));
   return out(posts);
+}
+
+export default async (req) => {
+  try { return await handle(req); }
+  catch (e) { console.error(e); return new Response(JSON.stringify({ error: "Server error: " + ((e && e.message) || e) }), { status: 500, headers: { "content-type": "application/json" } }); }
 };
 
 export const config = { path: ["/api/posts", "/api/posts/*"] };

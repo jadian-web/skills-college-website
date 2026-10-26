@@ -2,7 +2,7 @@
 // Serves the portal's replacement image when one exists, otherwise the original file.
 import { mediaStore, stateStore } from "./lib/stores.mjs";
 
-export default async (req) => {
+async function handle(req) {
   const url = new URL(req.url);
   const name = decodeURIComponent(url.pathname.replace(/^\/media\//, ""));
   if (!name || name.includes("..") || !/^[a-z0-9][a-z0-9._\/-]*$/i.test(name)) return new Response("Not found", { status: 404 });
@@ -29,6 +29,11 @@ export default async (req) => {
   if (isUpload) return new Response("Not found", { status: 404 });
   // Fall back to the original image shipped with the site
   return new Response(null, { status: 302, headers: { location: "/assets/img/" + name, "cache-control": "public, max-age=60" } });
+}
+
+export default async (req) => {
+  try { return await handle(req); }
+  catch (e) { console.error(e); return new Response(JSON.stringify({ error: "Server error: " + ((e && e.message) || e) }), { status: 500, headers: { "content-type": "application/json" } }); }
 };
 
 export const config = { path: "/media/*" };

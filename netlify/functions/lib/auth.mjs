@@ -3,7 +3,7 @@
 // Override any default with Netlify environment variables (recommended):
 //   ADMIN_USERNAME, ADMIN_PASSWORD_HASH (scrypt$<salt>$<hash>), SESSION_SECRET
 import crypto from "node:crypto";
-import { getStore } from "@netlify/blobs";
+import { store } from "./stores.mjs";
 
 const DEFAULT_USER = "jadian";
 const DEFAULT_HASH =
@@ -67,21 +67,26 @@ export function readSession(req) {
 }
 
 // ---- brute-force protection (per IP, stored in Netlify Blobs) ----
-const guard = () => getStore({ name: "sc-login-guard", consistency: "strong" });
+const guard = () => store("sc-login-guard");
 const ipKey = (ip) => "ip-" + crypto.createHash("sha256").update(ip || "unknown").digest("hex").slice(0, 32);
 
+// If storage is unavailable, sign-in still works (the error is logged) rather than failing completely
 export async function isLocked(ip) {
-  const rec = await guard().get(ipKey(ip), { type: "json" });
-  return rec && rec.lockedUntil && rec.lockedUntil > Date.now() ? rec.lockedUntil : 0;
+  try {
+    const rec = await guard().get(ipKey(ip), { type: "json" });
+    return rec && rec.lockedUntil && rec.lockedUntil > Date.now() ? rec.lockedUntil : 0;
+  } catch (e) { console.error("login guard read failed", e); return 0; }
 }
 export async function recordFail(ip) {
-  const k = ipKey(ip);
-  const rec = (await guard().get(k, { type: "json" })) || { fails: 0 };
-  rec.fails = (rec.fails || 0) + 1;
-  if (rec.fails >= MAX_FAILS) { rec.lockedUntil = Date.now() + LOCK_MINUTES * 60 * 1000; rec.fails = 0; }
-  await guard().setJSON(k, rec);
+  try {
+    const k = ipKey(ip);
+    const rec = (await guard().get(k, { type: "json" })) || { fails: 0 };
+    rec.fails = (rec.fails || 0) + 1;
+    if (rec.fails >= MAX_FAILS) { rec.lockedUntil = Date.now() + LOCK_MINUTES * 60 * 1000; rec.fails = 0; }
+    await guard().setJSON(k, rec);
+  } catch (e) { console.error("login guard write failed", e); }
 }
-export async function clearFails(ip) { await guard().delete(ipKey(ip)); }
+export async function clearFails(ip) { try { await guard().delete(ipKey(ip)); } catch (e) { console.error(e); } }
 
 export function json(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), {

@@ -1,7 +1,20 @@
 import { getStore } from "@netlify/blobs";
-export const mediaStore = () => getStore({ name: "sc-media", consistency: "strong" });
-export const postsStore = () => getStore({ name: "sc-posts", consistency: "strong" });
-export const stateStore = () => getStore({ name: "sc-state", consistency: "strong" });
+
+// Use strong consistency only when the environment supports it (avoids a crash if it does not)
+function blobsContext() {
+  try {
+    if (globalThis.netlifyBlobsContext) return JSON.parse(Buffer.from(globalThis.netlifyBlobsContext, "base64").toString());
+    if (process.env.NETLIFY_BLOBS_CONTEXT) return JSON.parse(Buffer.from(process.env.NETLIFY_BLOBS_CONTEXT, "base64").toString());
+  } catch {}
+  return null;
+}
+export function store(name) {
+  const ctx = blobsContext();
+  return ctx && ctx.uncachedEdgeURL ? getStore({ name, consistency: "strong" }) : getStore(name);
+}
+export const mediaStore = () => store("sc-media");
+export const postsStore = () => store("sc-posts");
+export const stateStore = () => store("sc-state");
 
 export const IMAGE_TYPES = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif" };
 export const MAX_BYTES = 4.5 * 1024 * 1024; // Netlify function request limit is 6 MB
