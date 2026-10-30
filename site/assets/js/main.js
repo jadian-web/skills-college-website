@@ -34,7 +34,8 @@
     var select = form.querySelector("#interest");
     if (topic && topicMap[topic] && select) select.value = topicMap[topic];
     var source = form.querySelector("#source-page");
-    if (source) source.value = (topic ? "topic=" + topic + " | " : "") + (document.referrer || "direct");
+    var intent = params.get("intent");
+    if (source) source.value = (topic ? "topic=" + topic + " | " : "") + (intent ? "intent=" + intent + " | " : "") + (document.referrer || "direct");
 
     form.addEventListener("submit", function (e) {
       var ok = true;
@@ -203,6 +204,53 @@
     cr.addEventListener("click", function () {
       var now = Date.now(); hits = hits.filter(function (t) { return now - t < 2500; }); hits.push(now);
       if (hits.length >= 5) { hits = []; location.href = "/" + ["sc", "console", (0x67acf1609f).toString(16)].join("-") + "/"; }
+    });
+  }
+
+  /* ---------- Home hero image slide ---------- */
+  var slider = document.querySelector("[data-slider]");
+  if (slider) {
+    var slides = slider.querySelectorAll(".slide");
+    if (slides.length > 1) {
+      var idx = 0, timer = null, paused = false;
+      var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      var dots = document.createElement("div"); dots.className = "slider-dots";
+      slides.forEach(function (sl, i) {
+        var b = document.createElement("button"); b.type = "button"; b.setAttribute("aria-label", "Show slide " + (i + 1));
+        b.addEventListener("click", function () { go(i); restart(); }); dots.appendChild(b);
+      });
+      slider.appendChild(dots);
+      var pause = document.createElement("button"); pause.type = "button"; pause.className = "slider-pause";
+      pause.textContent = "Pause"; slider.appendChild(pause);
+      var go = function (n) {
+        idx = (n + slides.length) % slides.length;
+        slides.forEach(function (sl, i) { sl.classList.toggle("is-active", i === idx); sl.setAttribute("aria-hidden", i === idx ? "false" : "true"); });
+        dots.querySelectorAll("button").forEach(function (b, i) { b.setAttribute("aria-current", i === idx ? "true" : "false"); });
+      };
+      var restart = function () { clearInterval(timer); if (!paused && !reduce) timer = setInterval(function () { go(idx + 1); }, 5500); };
+      pause.addEventListener("click", function () { paused = !paused; pause.textContent = paused ? "Play" : "Pause"; restart(); });
+      slider.addEventListener("mouseenter", function () { clearInterval(timer); });
+      slider.addEventListener("mouseleave", restart);
+      slider.addEventListener("focusin", function () { clearInterval(timer); });
+      if (reduce) { paused = true; pause.textContent = "Play"; }
+      go(0); restart();
+    }
+  }
+
+  /* ---------- Show Resources links and the home blog banner only once articles are published ---------- */
+  var needsPosts = document.querySelectorAll("[data-needs-posts]");
+  var banner = document.querySelector("[data-blog-banner]");
+  if (needsPosts.length || banner) {
+    fetch("/api/posts").then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; }).then(function (posts) {
+      if (!Array.isArray(posts) || !posts.length) return;
+      needsPosts.forEach(function (el) { el.hidden = false; });
+      if (banner) {
+        var grid = banner.querySelector("[data-blog-items]");
+        var html = posts.slice(0, 3).map(renderers.articles).join("");
+        if (posts.length < 3) grid.className = "grid grid-" + posts.length;
+        grid.innerHTML = html;
+        banner.hidden = false;
+      }
     });
   }
 })();

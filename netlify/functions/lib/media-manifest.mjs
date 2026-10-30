@@ -47,10 +47,33 @@ export default [
   "label": "Learner on campus"
  },
  {
-  "name": "learner-portrait.jpg",
-  "alt": "Smiling learner",
+  "name": "hero-slide-1.jpg",
+  "alt": "Learners gaining practical workplace experience",
   "pages": [
-   "/",
+   "/"
+  ],
+  "label": "Home hero slide 1"
+ },
+ {
+  "name": "hero-slide-2.jpg",
+  "alt": "Learner in practical occupational training",
+  "pages": [
+   "/"
+  ],
+  "label": "Home hero slide 2"
+ },
+ {
+  "name": "hero-slide-3.jpg",
+  "alt": "Skills Development consultation with an employer",
+  "pages": [
+   "/"
+  ],
+  "label": "Home hero slide 3"
+ },
+ {
+  "name": "learner-portrait.jpg",
+  "alt": "Learner in a learning environment",
+  "pages": [
    "/for-employers/higher-education-bursaries/"
   ],
   "label": "Learner portrait"
@@ -60,7 +83,8 @@ export default [
   "alt": "Learner in practical occupational training",
   "pages": [
    "/for-employers/learnerships-internships/",
-   "/qcto/curriculum/"
+   "/qcto/curriculum/",
+   "/qcto/qualifications/"
   ],
   "label": "Machine training"
  },
@@ -74,12 +98,30 @@ export default [
   "label": "Occupational learner"
  },
  {
+  "name": "path-employers.jpg",
+  "alt": "Employer in a Skills Development planning conversation",
+  "pages": [
+   "/"
+  ],
+  "label": "Home: employers path card (square)"
+ },
+ {
+  "name": "path-learners.jpg",
+  "alt": "Smiling learner on campus",
+  "pages": [
+   "/"
+  ],
+  "label": "Home: learners path card (square)"
+ },
+ {
   "name": "practical-training.jpg",
   "alt": "Learner in practical occupational training",
   "pages": [
    "/",
+   "/for-employers/accredited-training/",
    "/qcto/",
-   "/qcto/what-is-qcto/"
+   "/qcto/what-is-qcto/",
+   "/qcto/assessment-centre/"
   ],
   "label": "Practical training"
  },
@@ -157,9 +199,8 @@ export default [
  },
  {
   "name": "team-discussion.jpg",
-  "alt": "Employer in a planning conversation",
+  "alt": "Inclusive workplace discussion",
   "pages": [
-   "/",
    "/for-employers/disability-skills-development/",
    "/about/team/"
   ],
