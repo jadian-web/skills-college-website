@@ -42,7 +42,7 @@
     var e = $("#login-error"); e.hidden = !msg; e.textContent = msg || "";
     setTimeout(function () { $("#u").focus(); }, 50);
   }
-  function showApp() { $("#login").hidden = true; $("#app").hidden = false; loadMedia(); loadPosts(); }
+  function showApp() { $("#login").hidden = true; $("#app").hidden = false; loadMedia(); loadPosts(); document.dispatchEvent(new Event("sc:ready")); }
 
   $("#login-form").addEventListener("submit", function (ev) {
     ev.preventDefault();
@@ -266,6 +266,8 @@
       });
     }
   });
+  // shared helpers for the Events and Scorecard tabs (console-extra.js)
+  window.SCPortal = { api: api, toast: toast, esc: esc, openPicker: openPicker, uploadMany: uploadMany, slugify: slugify };
   // Paste as plain text to avoid bringing in Word formatting
   $("#f-body").addEventListener("paste", function (e) {
     e.preventDefault(); var t = (e.clipboardData || window.clipboardData).getData("text/plain");

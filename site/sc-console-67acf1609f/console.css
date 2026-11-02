@@ -99,3 +99,22 @@ dialog .lib-grid{margin-top:14px;max-height:60vh;overflow:auto}
 .toast.bad{background:var(--danger)}
 
 @media (max-width:900px){.editor-grid{grid-template-columns:1fr}.topbar{gap:12px;padding:0 14px}.topbar img{display:none}.workspace{padding:24px 16px 60px}.source-row{grid-template-columns:1fr}}
+.tabs .count{display:inline-block;min-width:18px;padding:0 6px;border-radius:9px;background:var(--orange);color:#fff;font-size:.72rem;line-height:18px;margin-left:4px}
+.gallery-edit{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;min-height:60px;border:1px dashed #b9d3e2;border-radius:8px;padding:10px;background:#f7fafc}
+.gallery-edit .g{position:relative;aspect-ratio:1;border-radius:6px;overflow:hidden;background:#fff}
+.gallery-edit .g img{width:100%;height:100%;object-fit:cover}
+.gallery-edit .g button{position:absolute;top:4px;right:4px;border:0;border-radius:4px;background:rgba(5,0,56,.8);color:#fff;font-size:.72rem;padding:3px 7px;cursor:pointer}
+.gallery-edit .g .mv{left:4px;right:auto}
+.gallery-edit .empty{grid-column:1/-1;color:var(--muted);font-size:.9rem;margin:8px}
+.sc-detail td{background:#f7fafc}
+.sc-detail .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;padding:6px 0}
+.sc-detail h4{margin:0 0 6px;font-size:.9rem;color:var(--navy)}
+.sc-detail ul{margin:0;padding-left:18px;font-size:.88rem}
+.sc-detail dl{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;margin:0;font-size:.85rem}
+.sc-detail dt{color:var(--muted)}
+.lvl{font-weight:700;color:var(--navy)}
+select.small{padding:4px 8px;font-size:.85rem;width:auto}
+#ev-body{min-height:200px}
+#ev-body:empty::before{content:"Describe the event: what happened, who took part, highlights..."}
+.gallery-actions{justify-content:flex-start;align-items:center}
+.gallery-actions .btn,.gallery-actions label.btn{margin:0}

@@ -17,7 +17,7 @@
   <form class="login-card" id="login-form" autocomplete="on">
     <img src="/assets/img/skills-college-logo.webp" alt="Skills College" width="190">
     <h1>Management portal</h1>
-    <p class="muted">Sign in to manage website images and blog posts.</p>
+    <p class="muted">Sign in to manage website images, blog posts, events and scorecard results.</p>
     <label for="u">Username</label>
     <input id="u" name="username" autocomplete="username" required>
     <label for="p">Password</label>
@@ -34,6 +34,8 @@
     <nav class="tabs" role="tablist">
       <button role="tab" id="tab-images" aria-selected="true" data-tab="images">Images</button>
       <button role="tab" id="tab-posts" aria-selected="false" data-tab="posts">Blog posts</button>
+      <button role="tab" id="tab-events" aria-selected="false" data-tab="events">Events</button>
+      <button role="tab" id="tab-scorecards" aria-selected="false" data-tab="scorecards">Scorecard results <span class="count" id="sc-new" hidden></span></button>
     </nav>
     <div class="topbar-right">
       <a href="/" target="_blank" rel="noopener">View website</a>
@@ -140,6 +142,85 @@
         </div>
       </form>
     </section>
+
+    <!-- EVENTS -->
+    <section id="panel-events" data-panel="events" hidden>
+      <div id="event-list-view">
+        <div class="panel-head">
+          <div><h1>Events</h1><p class="muted">Published events appear on the About &gt; Events page. Add go-karting, disc golf, team building, graduations and more, with photo galleries.</p></div>
+          <button class="btn primary" id="new-event">New event</button>
+        </div>
+        <div class="table-wrap"><table class="posts">
+          <thead><tr><th>Event</th><th>Type</th><th>Date</th><th>Photos</th><th>Status</th><th><span class="sr">Actions</span></th></tr></thead>
+          <tbody id="event-rows"><tr><td colspan="6" class="muted">Loading&hellip;</td></tr></tbody>
+        </table></div>
+      </div>
+      <form id="event-form" hidden>
+        <div class="panel-head">
+          <div><button type="button" class="link-btn" id="ev-back">&larr; All events</button><h1 id="ev-editor-title">New event</h1></div>
+          <div class="row-actions"><a class="btn ghost" id="ev-view-live" target="_blank" rel="noopener" hidden>View on site</a><button type="submit" class="btn primary">Save event</button></div>
+        </div>
+        <div class="editor-grid">
+          <div class="editor-main">
+            <label for="ev-title">Event name <span class="req">*</span></label>
+            <input id="ev-title" required maxlength="160" placeholder="e.g. Team go-karting day">
+            <label for="ev-summary">Short summary</label>
+            <textarea id="ev-summary" rows="3" maxlength="400" placeholder="One or two sentences shown on the event card"></textarea>
+            <label>Full description</label>
+            <div class="rte-toolbar" id="ev-toolbar">
+              <button type="button" data-cmd="bold" title="Bold"><b>B</b></button>
+              <button type="button" data-cmd="italic" title="Italic"><i>I</i></button>
+              <button type="button" data-block="h2" title="Heading">H2</button>
+              <button type="button" data-block="p" title="Paragraph">P</button>
+              <button type="button" data-cmd="insertUnorderedList" title="Bulleted list">&bull; List</button>
+            </div>
+            <div class="rte" id="ev-body" contenteditable="true" aria-label="Full description"></div>
+            <label>Photo gallery <span class="hint">shown on the event page; up to 40 photos</span></label>
+            <div class="row-actions gallery-actions" style="margin-bottom:10px">
+              <label class="btn ghost small">Upload photos<input type="file" id="ev-gallery-upload" accept="image/jpeg,image/png,image/webp,image/gif" multiple hidden></label>
+              <button type="button" class="btn ghost small" id="ev-gallery-pick">Add from library</button>
+            </div>
+            <div class="gallery-edit" id="ev-gallery"></div>
+          </div>
+          <aside class="editor-side">
+            <div class="side-card">
+              <label for="ev-status">Status</label>
+              <select id="ev-status"><option value="draft">Draft (hidden)</option><option value="published">Published</option></select>
+              <label for="ev-type">Event type</label>
+              <select id="ev-type"></select>
+              <label for="ev-date">Date</label>
+              <input id="ev-date" type="date">
+              <label for="ev-time">Time <span class="hint">optional</span></label>
+              <input id="ev-time" maxlength="40" placeholder="e.g. 09:00 to 14:00">
+              <label for="ev-location">Location</label>
+              <input id="ev-location" maxlength="160" placeholder="e.g. Kyalami Karting, Midrand">
+            </div>
+            <div class="side-card">
+              <label>Cover image</label>
+              <div class="cover" id="ev-cover-preview"><span class="muted">No cover image</span></div>
+              <div class="row-actions">
+                <button type="button" class="btn ghost small" id="ev-pick-cover">Choose</button>
+                <button type="button" class="btn ghost small" id="ev-clear-cover">Remove</button>
+              </div>
+              <label for="ev-cover-alt">Cover description (alt text)</label>
+              <input id="ev-cover-alt" maxlength="200">
+            </div>
+          </aside>
+        </div>
+      </form>
+    </section>
+
+    <!-- SCORECARD RESULTS -->
+    <section id="panel-scorecards" data-panel="scorecards" hidden>
+      <div class="panel-head">
+        <div><h1>Scorecard calculator results</h1><p class="muted">Every result from the B-BBEE scorecard calculator. Each one is also emailed to sales@skillscollege.co.za through Netlify Forms.</p></div>
+        <div class="row-actions"><button class="btn ghost" id="sc-refresh">Refresh</button><button class="btn primary" id="sc-csv">Download CSV</button></div>
+      </div>
+      <div class="table-wrap"><table class="posts">
+        <thead><tr><th>Date</th><th>Company</th><th>Contact</th><th>Category</th><th>Level</th><th>Status</th><th><span class="sr">Actions</span></th></tr></thead>
+        <tbody id="sc-rows"><tr><td colspan="7" class="muted">Loading&hellip;</td></tr></tbody>
+      </table></div>
+    </section>
   </main>
 </div>
 
@@ -152,5 +233,6 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <script src="console.js" defer></script>
+<script src="console-extra.js" defer></script>
 </body>
 </html>

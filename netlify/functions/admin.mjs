@@ -7,12 +7,14 @@ import {
   verifyPassword, createSessionCookie, clearSessionCookie, readSession,
   isLocked, recordFail, clearFails, json,
 } from "./lib/auth.mjs";
-import { mediaStore, postsStore, stateStore, IMAGE_TYPES, MAX_BYTES, sniffImage, slugify } from "./lib/stores.mjs";
+import { mediaStore, postsStore, stateStore, eventsStore, scorecardStore, IMAGE_TYPES, MAX_BYTES, sniffImage, slugify } from "./lib/stores.mjs";
 
 const CATEGORIES = ["QCTO", "B-BBEE Skills Development", "Learnerships & Internships", "Bursaries", "Funding & Grants",
   "Workplace Learning", "Compliance Updates", "Learner Guidance", "Company News"];
 
+const EVENT_TYPES = ["Go-Karting", "Disc Golf", "Team Building", "Learner Graduation", "Community Outreach", "Open Day", "Sports Day", "Year-End Function", "Other"];
 const clean = (html) => sanitize(html);
+const mediaUrl = (u) => /^\/media\/[a-z0-9._\/-]+$/i.test(u || "") ? u : "";
 const text = (v, max = 400) => String(v ?? "").replace(/[<>]/g, "").trim().slice(0, max);
 
 async function getState() { return (await stateStore().get("media-state", { type: "json" })) || { hidden: [] }; }
@@ -152,6 +154,75 @@ async function handle(req, context) {
 
   if (route.startsWith("posts/") && method === "DELETE") {
     await postsStore().delete(slugify(route.slice(6)));
+    return json({ ok: true });
+  }
+
+  // ---------------- events ----------------
+  if (route === "events" && method === "GET") {
+    const store = eventsStore();
+    const { blobs } = await store.list();
+    const events = (await Promise.all(blobs.map((b) => store.get(b.key, { type: "json" })))).filter(Boolean)
+      .sort((a, b) => String(b.date).localeCompare(String(a.date)));
+    return json({ events, types: EVENT_TYPES });
+  }
+
+  if (route === "events" && method === "POST") {
+    const p = await req.json().catch(() => null);
+    if (!p || !text(p.title)) return json({ error: "An event name is required." }, 400);
+    const store = eventsStore();
+    const slug = slugify(p.slug || (p.title + (p.date ? "-" + p.date : "")));
+    if (!slug) return json({ error: "Event name needs letters or numbers." }, 400);
+    const previous = p.originalSlug ? slugify(p.originalSlug) : "";
+    if (slug !== previous && (await store.get(slug))) return json({ error: "Another event already uses this web address." }, 409);
+    const existing = previous ? await store.get(previous, { type: "json" }) : null;
+    const ev = {
+      slug,
+      title: text(p.title, 160),
+      type: EVENT_TYPES.includes(p.type) ? p.type : "Other",
+      date: /^\d{4}-\d{2}-\d{2}$/.test(p.date) ? p.date : new Date().toISOString().slice(0, 10),
+      time: text(p.time, 40),
+      location: text(p.location, 160),
+      summary: text(p.summary, 400),
+      body: clean(p.body),
+      cover: mediaUrl(p.cover), coverAlt: text(p.coverAlt, 200),
+      gallery: (Array.isArray(p.gallery) ? p.gallery : []).map(mediaUrl).filter(Boolean).slice(0, 40),
+      status: p.status === "published" ? "published" : "draft",
+      createdAt: existing?.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    await store.setJSON(slug, ev);
+    if (previous && previous !== slug) await store.delete(previous);
+    return json({ ok: true, event: ev });
+  }
+
+  if (route.startsWith("events/") && method === "DELETE") {
+    await eventsStore().delete(slugify(route.slice(7)));
+    return json({ ok: true });
+  }
+
+  // ---------------- scorecard calculator results ----------------
+  if (route === "scorecards" && method === "GET") {
+    const store = scorecardStore();
+    const { blobs } = await store.list();
+    const keys = blobs.map((b) => b.key).sort().reverse().slice(0, 300);
+    const results = (await Promise.all(keys.map(async (k) => { const r = await store.get(k, { type: "json" }); return r ? { key: k, ...r } : null; }))).filter(Boolean);
+    return json({ results });
+  }
+
+  if (route === "scorecards/status" && method === "POST") {
+    const { key, status } = await req.json().catch(() => ({}));
+    if (!/^[A-Za-z0-9-]+$/.test(key || "") || !["new", "contacted", "closed"].includes(status)) return json({ error: "Bad request." }, 400);
+    const store = scorecardStore();
+    const r = await store.get(key, { type: "json" });
+    if (!r) return json({ error: "Not found." }, 404);
+    r.status = status; await store.setJSON(key, r);
+    return json({ ok: true });
+  }
+
+  if (route.startsWith("scorecards/") && method === "DELETE") {
+    const key = route.slice(11);
+    if (!/^[A-Za-z0-9-]+$/.test(key)) return json({ error: "Bad request." }, 400);
+    await scorecardStore().delete(key);
     return json({ ok: true });
   }
 

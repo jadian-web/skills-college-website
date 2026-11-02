@@ -15,6 +15,8 @@ export function store(name) {
 export const mediaStore = () => store("sc-media");
 export const postsStore = () => store("sc-posts");
 export const stateStore = () => store("sc-state");
+export const eventsStore = () => store("sc-events");
+export const scorecardStore = () => store("sc-scorecards");
 
 export const IMAGE_TYPES = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif" };
 export const MAX_BYTES = 4.5 * 1024 * 1024; // Netlify function request limit is 6 MB

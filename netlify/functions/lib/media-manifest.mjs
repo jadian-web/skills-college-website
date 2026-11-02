@@ -9,6 +9,22 @@ export default [
   "label": "Assessment"
  },
  {
+  "name": "campus-head-office.jpg",
+  "alt": "Skills College head office in Irene, Centurion",
+  "pages": [
+   "/about/"
+  ],
+  "label": "About: Irene head office"
+ },
+ {
+  "name": "campus-soshanguve.jpg",
+  "alt": "Skills College Soshanguve training campus",
+  "pages": [
+   "/about/"
+  ],
+  "label": "About: Soshanguve campus"
+ },
+ {
   "name": "classroom.jpg",
   "alt": "Learners in a Skills College classroom",
   "pages": [
@@ -31,7 +47,8 @@ export default [
    "/qcto/seta-to-qcto/",
    "/qcto/employer-support/",
    "/about/",
-   "/contact/"
+   "/contact/",
+   "/b-bbee-scorecard-calculator/"
   ],
   "label": "Employer consultation"
  },
@@ -146,6 +163,7 @@ export default [
    "/qcto/assessment-centre/",
    "/qcto/employer-support/",
    "/about/",
+   "/about/events/",
    "/about/accreditations-quality/",
    "/case-studies/",
    "/about/team/",
@@ -157,7 +175,8 @@ export default [
    "/cookie-policy/",
    "/disclaimer/",
    "/resources/article/",
-   "/404.html"
+   "/404.html",
+   "/b-bbee-scorecard-calculator/"
   ],
   "label": "Logo (footer, white)"
  },
@@ -182,6 +201,7 @@ export default [
    "/qcto/assessment-centre/",
    "/qcto/employer-support/",
    "/about/",
+   "/about/events/",
    "/about/accreditations-quality/",
    "/case-studies/",
    "/about/team/",
@@ -193,7 +213,8 @@ export default [
    "/cookie-policy/",
    "/disclaimer/",
    "/resources/article/",
-   "/404.html"
+   "/404.html",
+   "/b-bbee-scorecard-calculator/"
   ],
   "label": "Logo (header)"
  },
@@ -202,6 +223,7 @@ export default [
   "alt": "Inclusive workplace discussion",
   "pages": [
    "/for-employers/disability-skills-development/",
+   "/about/events/",
    "/about/team/"
   ],
   "label": "Team discussion"

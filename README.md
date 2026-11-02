@@ -1,21 +1,21 @@
 # Skills College website + management portal
 
-## How this is deployed (no installs needed)
-The portal runs on Netlify Functions, which Netlify's drag-and-drop page
-cannot deploy. Instead, the files live in a private GitHub repository and
-Netlify builds the site from it automatically. Everything is done in a browser.
+## What changed from the drag-and-drop version
+The management portal runs on Netlify Functions and stores images and blog
+posts in Netlify Blobs. Netlify's drag-and-drop upload does **not** deploy
+functions, so this version is deployed with the Netlify command-line tool
+(one script) or from a GitHub repository.
 
-1. GitHub: create a free account, then New repository > name it
-   `skills-college-website` > Private > Create.
-2. On the empty repository page click "uploading an existing file", drag in
-   everything INSIDE this folder (not the folder itself), then Commit changes.
-3. Netlify: Add new site > Import an existing project > GitHub > choose the
-   repository. Leave the build settings as they are and click Deploy.
-4. To use your existing domain, open Domain management on the new site and
-   move the domain from the old drag-and-drop site.
+## Deploy (Windows)
+1. Install Node.js LTS from https://nodejs.org (one time).
+2. Unzip this folder and double-click `deploy-windows.bat`.
+3. First time only: log in to Netlify in the browser window that opens, then
+   pick your existing Skills College site (or create a new one).
 
-To update files later: open the file on GitHub, click the pencil (or Add file
-> Upload files), commit, and Netlify republishes within a minute.
+Mac/Linux: run `./deploy-mac-linux.sh`.
+
+Alternative: push this folder to a private GitHub repo and connect it in
+Netlify (Add new site > Import from Git). No build command is needed.
 
 ## Opening the portal
 There is no link or menu item to it. On any page, **click the (c) copyright
@@ -34,8 +34,8 @@ bookmark the address it opens.
 
 **Strongly recommended after the first deploy:** in Netlify go to
 Site configuration > Environment variables and add:
-- `ADMIN_PASSWORD_HASH` - ask Claude (or a developer) for a new hash, or run
-  `tools/new-password-hash.mjs` with Node, and paste the first line. (The password was shared in a chat, so change it.)
+- `ADMIN_PASSWORD_HASH` - run `node tools/new-password-hash.mjs "NewPassword"`
+  and paste the first line. (The password was shared in a chat, so change it.)
 - `SESSION_SECRET` - the second value printed by the same command.
 - `ADMIN_USERNAME` - optional, defaults to `jadian`.
 Then redeploy. Changing SESSION_SECRET signs everyone out.
@@ -47,13 +47,17 @@ Then redeploy. Changing SESSION_SECRET signs everyone out.
 - Images on pages load from `/media/<file>`: the portal's replacement if one
   exists, otherwise the original in `site/assets/img/`.
 - Blog posts appear on `/resources/` and open at `/resources/article/?slug=...`.
+- Events appear on `/about/events/` and open at `/about/events/?event=...`
+  (managed in the portal's Events tab).
+- The B-BBEE calculator is at `/b-bbee-scorecard-calculator/`. Results are
+  saved to the portal's "Scorecard results" tab and sent through Netlify Forms
+  (form name `scorecard`).
 
-## Troubleshooting
-Open `https://YOUR-SITE/api/admin/health` in a browser.
-- `{"functions":"ok", "storage":"ok"}` - everything is running.
-- Page not found - Netlify did not deploy the functions. Check that the site
-  is connected to the GitHub repository (not drag-and-drop) and that
-  `netlify.toml`, `package.json` and the `netlify` folder are at the top level
-  of the repository.
-- `storage: error ...` - send the message to your developer.
-Function logs: Netlify > your site > Logs > Functions > admin.
+## Email scorecard results to sales@skillscollege.co.za (one-time setup)
+1. Netlify > your site > Forms: make sure form detection is enabled, then
+   redeploy once so the `scorecard` form is detected.
+2. Netlify > Site configuration > Notifications > Emails and webhooks >
+   Form submission notifications > Add notification > Email notification.
+3. Event: "New form submission", Form: `scorecard`,
+   Email: sales@skillscollege.co.za. Save.
+Every calculator result then arrives by email, and is also listed in the portal.

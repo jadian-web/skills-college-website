@@ -28,7 +28,7 @@
       "strategy": "Skills Development Strategy", "learnerships": "Learnerships & Internships",
       "bursaries": "Higher Education Bursaries", "ignite": "Higher Education Bursaries",
       "disability": "Disability Skills Development", "absorption": "B-BBEE Absorption",
-      "training": "Accredited Training"
+      "training": "Accredited Training", "b-bbee": "B-BBEE scorecard advice", "events": "Events"
     };
     var topic = params.get("topic");
     var select = form.querySelector("#interest");
@@ -252,5 +252,128 @@
         banner.hidden = false;
       }
     });
+  }
+  /* ---------- Programme solutions hand: opens finger by finger when scrolled into view ---------- */
+  var stage = document.querySelector("[data-hand]");
+  if (stage) {
+    var reduceHand = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var svg = stage.querySelector(".hand-lines");
+    var NS = "http://www.w3.org/2000/svg";
+    var opened = false;
+    var steps = [1, 2, 3, 4, 5];
+    var drawLines = function () {
+      if (!svg || getComputedStyle(svg).display === "none") return;
+      var box = stage.getBoundingClientRect();
+      svg.setAttribute("viewBox", "0 0 " + box.width + " " + box.height);
+      svg.innerHTML = "";
+      steps.forEach(function (n) {
+        var pin = stage.querySelector('.hand-pin[data-step="' + n + '"]');
+        var icon = stage.querySelector('.sol-item[data-step="' + n + '"] .sol-icon');
+        if (!pin || !icon) return;
+        var a = pin.getBoundingClientRect(), b = icon.getBoundingClientRect();
+        var x1 = a.left + a.width / 2 - box.left, y1 = a.top + a.height / 2 - box.top;
+        var x2 = b.left - box.left - 6, y2 = b.top + b.height / 2 - box.top;
+        var g = document.createElementNS(NS, "g");
+        g.setAttribute("data-step", n);
+        var len = Math.hypot(x2 - x1, y2 - y1);
+        var d = "M" + x1.toFixed(1) + " " + y1.toFixed(1) + " L" + x2.toFixed(1) + " " + y2.toFixed(1);
+        var mid = "hm" + n;
+        g.innerHTML = '<mask id="' + mid + '" maskUnits="userSpaceOnUse"><path class="draw" d="' + d + '" stroke="#fff" stroke-width="8" fill="none" stroke-dasharray="' + len + '" stroke-dashoffset="' + (opened && stage.querySelector('.hand-pin[data-step="' + n + '"].on') ? 0 : len) + '"/></mask>' +
+          '<path class="ln" d="' + d + '" mask="url(#' + mid + ')"/><circle class="end" cx="' + x2 + '" cy="' + y2 + '" r="4" mask="url(#' + mid + ')"/>';
+        if (pin.classList.contains("on")) g.classList.add("on");
+        svg.appendChild(g);
+      });
+    };
+    var turnOn = function (n) {
+      stage.querySelectorAll('[data-step="' + n + '"]').forEach(function (el) { el.classList.add("on"); });
+      var draw = svg && svg.querySelector('g[data-step="' + n + '"] .draw');
+      if (draw) requestAnimationFrame(function () { draw.style.strokeDashoffset = "0"; });
+    };
+    var open = function () {
+      if (opened) return; opened = true;
+      stage.classList.add("is-open");
+      if (reduceHand) { steps.forEach(turnOn); return; }
+      steps.forEach(function (n, i) { setTimeout(function () { turnOn(n); }, 500 + i * 620); });
+    };
+    stage.classList.add("hand-ready");
+    drawLines();
+    if (reduceHand || !("IntersectionObserver" in window)) { open(); }
+    else {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) { if (en.isIntersecting) { open(); io.disconnect(); } });
+      }, { threshold: 0.12 });
+      io.observe(stage);
+    }
+    var rt; window.addEventListener("resize", function () { clearTimeout(rt); rt = setTimeout(drawLines, 120); });
+    window.addEventListener("load", drawLines);
+    // Card <-> finger highlight
+    stage.querySelectorAll(".sol-item").forEach(function (li) {
+      var n = li.getAttribute("data-step");
+      var on = function () { stage.setAttribute("data-active", n); svg && svg.querySelectorAll("g").forEach(function (g) { g.classList.toggle("dim", g.getAttribute("data-step") !== n); }); };
+      var off = function () { stage.removeAttribute("data-active"); svg && svg.querySelectorAll("g").forEach(function (g) { g.classList.remove("dim"); }); };
+      li.addEventListener("mouseenter", on); li.addEventListener("mouseleave", off);
+      li.addEventListener("focusin", on); li.addEventListener("focusout", off);
+    });
+  }
+  /* ---------- Events page (events managed in the portal) ---------- */
+  var evPage = document.querySelector("[data-events-page]");
+  if (evPage) {
+    var MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    var today = new Date().toISOString().slice(0, 10);
+    var evSlug = new URLSearchParams(location.search).get("event");
+    var q = function (sel) { return evPage.querySelector(sel); };
+    var card = function (ev) {
+      var d = (ev.date || "").split("-");
+      var cover = ev.cover ? '<img src="' + esc(ev.cover) + '" alt="' + esc(ev.coverAlt || ev.title) + '" loading="lazy">' : "";
+      return '<a class="event-card" data-type="' + esc(ev.type) + '" href="/about/events/?event=' + encodeURIComponent(ev.slug) + '"><div class="cover">' + cover +
+        (d.length === 3 ? '<span class="date-badge"><b>' + (+d[2]) + "</b><small>" + MON[+d[1] - 1] + " " + d[0] + "</small></span>" : "") + '</div><div class="body"><span class="event-type">' + esc(ev.type) + "</span><h3>" + esc(ev.title) + "</h3>" +
+        (ev.location ? '<span class="meta">' + esc(ev.location) + "</span>" : "") + (ev.summary ? "<p>" + esc(ev.summary) + "</p>" : "") +
+        '<span class="text-link">' + ((ev.gallery || []).length ? "View photos" : "View event") + ' <span class="arrow" aria-hidden="true">&rarr;</span></span></div></a>';
+    };
+    if (evSlug) {
+      q("[data-events-list]").hidden = true;
+      fetch("/api/events/" + encodeURIComponent(evSlug)).then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (ev) {
+        var f = function (k) { return evPage.querySelector('[data-ef="' + k + '"]'); };
+        document.title = ev.title + " | Skills College";
+        f("type").textContent = ev.type; f("title").textContent = ev.title;
+        f("facts").innerHTML = (ev.date ? "<span><strong>Date:</strong> " + esc(fmtDate(ev.date)) + (ev.time ? ", " + esc(ev.time) : "") + "</span>" : "") + (ev.location ? "<span><strong>Where:</strong> " + esc(ev.location) + "</span>" : "");
+        if (ev.cover) { f("cover").src = ev.cover; f("cover").alt = ev.coverAlt || ev.title; f("cover").hidden = false; }
+        f("body").innerHTML = ev.body || (ev.summary ? "<p>" + esc(ev.summary) + "</p>" : "");
+        var pics = ev.gallery || [];
+        if (pics.length) {
+          f("gallery").innerHTML = pics.map(function (g, i) { return '<button type="button" data-i="' + i + '" aria-label="Open photo ' + (i + 1) + '"><img src="' + esc(g) + '" alt="" loading="lazy"></button>'; }).join("");
+          f("gallery-wrap").hidden = false;
+          var lb = document.querySelector("[data-lightbox]"), cur = 0;
+          var show = function (i) { cur = (i + pics.length) % pics.length; lb.querySelector("img").src = pics[cur]; lb.querySelector("[data-lb-count]").textContent = (cur + 1) + " of " + pics.length; };
+          f("gallery").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; show(+b.getAttribute("data-i")); lb.showModal ? lb.showModal() : lb.setAttribute("open", ""); });
+          lb.querySelector("[data-lb-prev]").onclick = function () { show(cur - 1); };
+          lb.querySelector("[data-lb-next]").onclick = function () { show(cur + 1); };
+          lb.querySelector("[data-lb-close]").onclick = function () { lb.close ? lb.close() : lb.removeAttribute("open"); };
+          lb.addEventListener("keydown", function (e) { if (e.key === "ArrowLeft") show(cur - 1); if (e.key === "ArrowRight") show(cur + 1); });
+        }
+        q("[data-event-detail]").hidden = false;
+      }).catch(function () { q("[data-events-list]").hidden = false; });
+    }
+    if (!evSlug) fetch("/api/events").then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (list) {
+      if (!list || !list.length) return;
+      q("[data-events-empty]").hidden = true;
+      var up = list.filter(function (e) { return e.date >= today; }).sort(function (a, b) { return a.date.localeCompare(b.date); });
+      var past = list.filter(function (e) { return e.date < today; });
+      if (up.length) { q("[data-upcoming-items]").innerHTML = up.map(card).join(""); q("[data-upcoming]").hidden = false; }
+      if (past.length) { q("[data-past-items]").innerHTML = past.map(card).join(""); q("[data-past]").hidden = false; }
+      var types = []; list.forEach(function (e) { if (types.indexOf(e.type) < 0) types.push(e.type); });
+      if (types.length > 1) {
+        var chips = q("[data-event-chips]");
+        chips.innerHTML = ['All events'].concat(types).map(function (t, i) { return '<button class="chip" type="button" aria-pressed="' + (i === 0) + '">' + esc(t) + "</button>"; }).join("");
+        chips.hidden = false;
+        chips.addEventListener("click", function (e) {
+          var b = e.target.closest(".chip"); if (!b) return;
+          chips.querySelectorAll(".chip").forEach(function (c) { c.setAttribute("aria-pressed", String(c === b)); });
+          var t = b.textContent;
+          evPage.querySelectorAll(".event-card").forEach(function (c) { c.hidden = t !== "All events" && c.getAttribute("data-type") !== t; });
+          ["[data-upcoming]", "[data-past]"].forEach(function (sel) { var g = q(sel); if (!g.querySelector(".event-card")) return; g.hidden = !g.querySelector(".event-card:not([hidden])"); });
+        });
+      }
+    }).catch(function () {});
   }
 })();
