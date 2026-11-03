@@ -13,7 +13,7 @@ export default async () => {
     const team = (await Promise.all(blobs.map((b) => store.get(b.key, { type: "json" }))))
       .filter((p) => p && p.status === "published")
       .sort((a, b) => (a.order ?? 999) - (b.order ?? 999) || String(a.name).localeCompare(String(b.name)))
-      .map(({ id, name, role, department, bio, photo, linkedin, email }) => ({ id, name, role, department, bio, photo, linkedin, email }));
+      .map(({ id, name, role, department, bio, photo, linkedin, email, featured }) => ({ id, name, role, department, bio, photo, linkedin, email, featured: !!featured }));
     return out(team);
   } catch (e) {
     console.error(e);

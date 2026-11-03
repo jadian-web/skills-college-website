@@ -796,3 +796,27 @@ button.btn { font-family: var(--font); }
 .team-bio { color: var(--muted); font-size: .93rem; margin: 6px 0 0; }
 .team-links { display: flex; gap: 16px; margin-top: auto; padding-top: 12px; }
 .team-links a { font-weight: 600; font-size: .9rem; }
+
+/* Leadership profiles (CEO, Managing Director) */
+.leaders { display: grid; gap: clamp(40px, 6vw, 72px); max-width: 1100px; margin: 0 auto; }
+.leader { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(28px, 5vw, 64px); align-items: center; }
+.leader:nth-child(even) { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
+.leader:nth-child(even) .leader-photo { order: 2; }
+.leader-photo { position: relative; aspect-ratio: 4 / 5; border-radius: 20px; overflow: hidden; background: linear-gradient(135deg, var(--navy), var(--blue)); display: grid; place-items: center; box-shadow: 0 24px 60px rgba(20, 27, 77, .16); }
+.leader-photo::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 8px; background: linear-gradient(90deg, var(--blue) 0 25%, var(--orange) 25% 50%, var(--teal) 50% 75%, var(--magenta) 75%); }
+.leader-photo img { width: 100%; height: 100%; object-fit: cover; }
+.leader-photo .initials { color: #fff; font-size: clamp(3rem, 7vw, 5rem); font-weight: 700; }
+.leader-role { margin: 0 0 6px; color: var(--orange-text); font-weight: 700; font-size: .85rem; letter-spacing: .1em; text-transform: uppercase; }
+.leader-body h3 { font-size: clamp(1.7rem, 3vw, 2.4rem); line-height: 1.15; }
+.leader-bio { margin-top: 18px; color: var(--muted); font-size: 1.05rem; }
+.leader-bio p + p { margin-top: 12px; }
+.leader-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); }
+.leader-links .btn { display: inline-flex; align-items: center; gap: 8px; text-transform: none; letter-spacing: 0; }
+.leader-links svg { width: 16px; height: 16px; fill: currentColor; }
+.leader-links a[href^="mailto"] svg { fill: none; }
+.team-bio { display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
+@media (max-width: 820px) {
+  .leader, .leader:nth-child(even) { grid-template-columns: 1fr; }
+  .leader:nth-child(even) .leader-photo { order: 0; }
+  .leader-photo { max-width: 420px; width: 100%; margin: 0 auto; }
+}

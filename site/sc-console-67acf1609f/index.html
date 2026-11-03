@@ -216,7 +216,7 @@
     <section id="panel-team" data-panel="team" hidden>
       <div id="team-list-view">
         <div class="panel-head">
-          <div><h1>Team profiles</h1><p class="muted">Published profiles appear on About &gt; Meet the Team, in the order shown here. Use the arrows to change the order.</p></div>
+          <div><h1>Team profiles</h1><p class="muted">Published profiles appear on About &gt; Meet the Team, in the order shown here. Leadership profiles (CEO, Managing Director) appear first as large profiles; everyone else appears as cards below. Use the arrows to change the order.</p></div>
           <button class="btn primary" id="new-person">Add person</button>
         </div>
         <div class="team-admin" id="team-rows"><p class="muted">Loading&hellip;</p></div>
@@ -235,8 +235,8 @@
             <label for="tm-dept">Department or team</label>
             <input id="tm-dept" maxlength="120" list="tm-depts" placeholder="e.g. Learner Support">
             <datalist id="tm-depts"></datalist>
-            <label for="tm-bio">Short bio <span class="hint">up to 700 characters</span></label>
-            <textarea id="tm-bio" rows="6" maxlength="700" placeholder="Two or three sentences about their experience and what they help clients or learners with."></textarea>
+            <label for="tm-bio">Bio <span class="hint">up to 1500 characters; keep team-card bios to two or three sentences</span></label>
+            <textarea id="tm-bio" rows="8" maxlength="1500" placeholder="Two or three sentences about their experience and what they help clients or learners with."></textarea>
             <label for="tm-linkedin">LinkedIn profile <span class="hint">optional, https://www.linkedin.com/in/...</span></label>
             <input id="tm-linkedin" maxlength="300" type="url">
             <label for="tm-email">Work email <span class="hint">optional, shown on the website</span></label>
@@ -246,6 +246,7 @@
             <div class="side-card">
               <label for="tm-status">Status</label>
               <select id="tm-status"><option value="draft">Draft (hidden)</option><option value="published">Published</option></select>
+              <label class="check-row"><input type="checkbox" id="tm-featured"> <span><strong>Leadership profile</strong><br><span class="hint">Shows as a large profile at the top of the page, with the photo beside the bio. Use for the CEO and Managing Director. Leadership profiles appear in the order set on the Team list.</span></span></label>
             </div>
             <div class="side-card">
               <label>Photo <span class="hint">square photos look best</span></label>

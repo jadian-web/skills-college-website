@@ -411,9 +411,25 @@
         ((p.linkedin || p.email) ? '<div class="team-links">' + (p.linkedin ? '<a href="' + esc(p.linkedin) + '" target="_blank" rel="noopener">LinkedIn</a>' : "") + (p.email ? '<a href="mailto:' + esc(p.email) + '">Email</a>' : "") + "</div>" : "") +
         "</div></article>";
     };
-    fetch("/api/team").then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (team) {
-      if (!team || !team.length) return;
+    var LI = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9h4v12H3zM9 9h3.8v1.7h.1c.5-1 1.8-2 3.8-2 4 0 4.8 2.6 4.8 6V21h-4v-5.6c0-1.4 0-3.1-1.9-3.1s-2.2 1.5-2.2 3V21H9z"/></svg>';
+    var MAIL = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 6.5 12 13l8.5-6.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>';
+    var leader = function (p) {
+      var paras = String(p.bio || "").split(/\n\s*\n|\n/).filter(function (t) { return t.trim(); }).map(function (t) { return "<p>" + esc(t.trim()) + "</p>"; }).join("");
+      return '<article class="leader">' +
+        '<div class="leader-photo">' + (p.photo ? '<img src="' + esc(p.photo) + '" alt="' + esc(p.name + (p.role ? ", " + p.role : "")) + '">' : '<span class="initials" aria-hidden="true">' + esc(initials(p.name)) + "</span>") + "</div>" +
+        '<div class="leader-body">' + (p.role ? '<p class="leader-role">' + esc(p.role) + "</p>" : "") + "<h3>" + esc(p.name) + "</h3>" +
+        '<div class="leader-bio">' + paras + "</div>" +
+        ((p.linkedin || p.email) ? '<div class="leader-links">' +
+          (p.linkedin ? '<a class="btn btn-outline btn-sm" href="' + esc(p.linkedin) + '" target="_blank" rel="noopener">' + LI + " LinkedIn</a>" : "") +
+          (p.email ? '<a class="btn btn-outline btn-sm" href="mailto:' + esc(p.email) + '">' + MAIL + " " + esc(p.email) + "</a>" : "") + "</div>" : "") +
+        "</div></article>";
+    };
+    fetch("/api/team").then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (all) {
+      if (!all || !all.length) return;
       teamPage.querySelector("[data-team-empty]").hidden = true;
+      var leaders = all.filter(function (p) { return p.featured; }), team = all.filter(function (p) { return !p.featured; });
+      if (leaders.length) { teamPage.querySelector("[data-team-leaders]").innerHTML = leaders.map(leader).join(""); teamPage.querySelector("[data-team-leaders-wrap]").hidden = false; }
+      if (!team.length) { teamPage.querySelector("[data-team-rest]").closest(".section").hidden = true; return; }
       var grid = teamPage.querySelector("[data-team-items]");
       grid.innerHTML = team.map(person).join("");
       var depts = []; team.forEach(function (p) { if (p.department && depts.indexOf(p.department) < 0) depts.push(p.department); });

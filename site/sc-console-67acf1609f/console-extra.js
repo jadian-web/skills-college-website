@@ -173,7 +173,7 @@
       $("#tm-depts").innerHTML = depts.map(function (x) { return '<option value="' + esc(x) + '">'; }).join("");
       $("#team-rows").innerHTML = d.team.length ? d.team.map(function (p, i) {
         return '<article class="person"><div class="ph">' + (p.photo ? '<img src="' + esc(p.photo) + '" alt="">' : esc(initials(p.name))) + "</div>" +
-          '<div><h3>' + esc(p.name) + '</h3><p class="r">' + esc(p.role || "No job title") + (p.department ? " &middot; " + esc(p.department) : "") + '</p><span class="status ' + p.status + '">' + (p.status === "published" ? "Published" : "Draft") + "</span></div>" +
+          '<div><h3>' + esc(p.name) + '</h3><p class="r">' + esc(p.role || "No job title") + (p.department ? " &middot; " + esc(p.department) : "") + '</p><span class="status ' + p.status + '">' + (p.status === "published" ? "Published" : "Draft") + "</span>" + (p.featured ? '<span class="badge-lead">Leadership</span>' : "") + "</div>" +
           '<div class="acts"><button class="btn ghost small" data-tm-edit="' + esc(p.id) + '">Edit</button><button class="btn danger small" data-tm-del="' + esc(p.id) + '">Delete</button>' +
           '<span class="ord"><button class="btn ghost small" data-tm-move="' + i + '" data-dir="-1" title="Move earlier"' + (i ? "" : " disabled") + '>&uarr;</button><button class="btn ghost small" data-tm-move="' + i + '" data-dir="1" title="Move later"' + (i < d.team.length - 1 ? "" : " disabled") + ">&darr;</button></span></div></article>";
       }).join("") : '<p class="empty">No team profiles yet. Select "Add person" to create the first one.</p>';
@@ -188,7 +188,7 @@
     $("#tm-editor-title").textContent = p ? "Edit profile" : "Add person";
     $("#tm-name").value = p ? p.name : ""; $("#tm-role").value = p ? p.role || "" : ""; $("#tm-dept").value = p ? p.department || "" : "";
     $("#tm-bio").value = p ? p.bio || "" : ""; $("#tm-linkedin").value = p ? p.linkedin || "" : ""; $("#tm-email").value = p ? p.email || "" : "";
-    $("#tm-status").value = p ? p.status : "published"; setPhoto(p ? p.photo : "");
+    $("#tm-status").value = p ? p.status : "published"; $("#tm-featured").checked = !!(p && p.featured); setPhoto(p ? p.photo : "");
     $("#team-list-view").hidden = true; $("#team-form").hidden = false; window.scrollTo(0, 0);
   }
   function closePerson() { $("#team-form").hidden = true; $("#team-list-view").hidden = false; loadTeam(); }
@@ -222,7 +222,7 @@
   $("#team-form").addEventListener("submit", function (e) {
     e.preventDefault();
     var p = { id: tm.editing ? tm.editing.id : "", name: $("#tm-name").value, role: $("#tm-role").value, department: $("#tm-dept").value,
-      bio: $("#tm-bio").value, linkedin: $("#tm-linkedin").value.trim(), email: $("#tm-email").value.trim(), status: $("#tm-status").value,
+      bio: $("#tm-bio").value, linkedin: $("#tm-linkedin").value.trim(), email: $("#tm-email").value.trim(), status: $("#tm-status").value, featured: $("#tm-featured").checked,
       photo: $("#tm-photo-preview").getAttribute("data-url") || "" };
     if (p.linkedin && !/^https:\/\/([a-z]{2,3}\.)?linkedin\.com\//i.test(p.linkedin)) { toast("LinkedIn link must start with https://www.linkedin.com/", true); return; }
     var btn = e.submitter || $("#team-form button[type=submit]"); btn.disabled = true;
