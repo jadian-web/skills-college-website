@@ -8,7 +8,7 @@
 
   document.addEventListener("sc:ready", function () {
     P = window.SCPortal; esc = P.esc; api = P.api; toast = P.toast;
-    loadEvents(); loadScorecards();
+    loadEvents(); loadScorecards(); loadTeam();
   });
 
   /* ================= EVENTS ================= */
@@ -162,5 +162,73 @@
   document.addEventListener("change", function (e) {
     var s = e.target.closest("[data-sc-status]"); if (!s || !P) return;
     api("scorecards/status", { method: "POST", json: { key: s.getAttribute("data-sc-status"), status: s.value } }).then(function () { toast("Status updated."); loadScorecards(); }).catch(function (er) { toast(er.message, true); });
+  });
+  /* ================= TEAM ================= */
+  var tm = { list: [], editing: null };
+  function initials(n) { return String(n || "").split(/\s+/).filter(Boolean).slice(0, 2).map(function (w) { return w.charAt(0).toUpperCase(); }).join(""); }
+  function loadTeam() {
+    return api("team").then(function (d) {
+      tm.list = d.team;
+      var depts = []; d.team.forEach(function (p) { if (p.department && depts.indexOf(p.department) < 0) depts.push(p.department); });
+      $("#tm-depts").innerHTML = depts.map(function (x) { return '<option value="' + esc(x) + '">'; }).join("");
+      $("#team-rows").innerHTML = d.team.length ? d.team.map(function (p, i) {
+        return '<article class="person"><div class="ph">' + (p.photo ? '<img src="' + esc(p.photo) + '" alt="">' : esc(initials(p.name))) + "</div>" +
+          '<div><h3>' + esc(p.name) + '</h3><p class="r">' + esc(p.role || "No job title") + (p.department ? " &middot; " + esc(p.department) : "") + '</p><span class="status ' + p.status + '">' + (p.status === "published" ? "Published" : "Draft") + "</span></div>" +
+          '<div class="acts"><button class="btn ghost small" data-tm-edit="' + esc(p.id) + '">Edit</button><button class="btn danger small" data-tm-del="' + esc(p.id) + '">Delete</button>' +
+          '<span class="ord"><button class="btn ghost small" data-tm-move="' + i + '" data-dir="-1" title="Move earlier"' + (i ? "" : " disabled") + '>&uarr;</button><button class="btn ghost small" data-tm-move="' + i + '" data-dir="1" title="Move later"' + (i < d.team.length - 1 ? "" : " disabled") + ">&darr;</button></span></div></article>";
+      }).join("") : '<p class="empty">No team profiles yet. Select "Add person" to create the first one.</p>';
+    }).catch(function (e) { if (e.message !== "signed out") toast(e.message, true); });
+  }
+  function setPhoto(url) {
+    $("#tm-photo-preview").innerHTML = url ? '<img src="' + esc(url) + '" alt="">' : '<span class="muted">No photo</span>';
+    $("#tm-photo-preview").setAttribute("data-url", url || "");
+  }
+  function openPerson(p) {
+    tm.editing = p || null;
+    $("#tm-editor-title").textContent = p ? "Edit profile" : "Add person";
+    $("#tm-name").value = p ? p.name : ""; $("#tm-role").value = p ? p.role || "" : ""; $("#tm-dept").value = p ? p.department || "" : "";
+    $("#tm-bio").value = p ? p.bio || "" : ""; $("#tm-linkedin").value = p ? p.linkedin || "" : ""; $("#tm-email").value = p ? p.email || "" : "";
+    $("#tm-status").value = p ? p.status : "published"; setPhoto(p ? p.photo : "");
+    $("#team-list-view").hidden = true; $("#team-form").hidden = false; window.scrollTo(0, 0);
+  }
+  function closePerson() { $("#team-form").hidden = true; $("#team-list-view").hidden = false; loadTeam(); }
+  document.addEventListener("click", function (e) {
+    if (!P) return;
+    var t = e.target;
+    if (t.closest("#new-person")) return openPerson(null);
+    if (t.closest("#tm-back")) return closePerson();
+    if (t.closest("#tm-pick-photo")) return P.openPicker(setPhoto);
+    if (t.closest("#tm-clear-photo")) return setPhoto("");
+    var ed = t.closest("[data-tm-edit]");
+    if (ed) { var p = tm.list.filter(function (x) { return x.id === ed.getAttribute("data-tm-edit"); })[0]; if (p) openPerson(p); return; }
+    var del = t.closest("[data-tm-del]");
+    if (del) {
+      if (!confirm("Delete this profile? Their photo stays in the image library.")) return;
+      api("team/" + encodeURIComponent(del.getAttribute("data-tm-del")), { method: "DELETE" }).then(function () { toast("Profile deleted."); loadTeam(); }).catch(function (er) { toast(er.message, true); });
+      return;
+    }
+    var mv = t.closest("[data-tm-move]");
+    if (mv) {
+      var i = +mv.getAttribute("data-tm-move"), j = i + (+mv.getAttribute("data-dir"));
+      var ids = tm.list.map(function (x) { return x.id; }); var tmp = ids[i]; ids[i] = ids[j]; ids[j] = tmp;
+      api("team/order", { method: "POST", json: { ids: ids } }).then(function () { toast("Order saved."); loadTeam(); }).catch(function (er) { toast(er.message, true); });
+    }
+  });
+  document.addEventListener("change", function (e) {
+    if (e.target.id !== "tm-photo-upload" || !P) return;
+    var input = e.target;
+    P.uploadMany(input.files).then(function (res) { if (res[0]) setPhoto(res[0].url); input.value = ""; });
+  });
+  $("#team-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var p = { id: tm.editing ? tm.editing.id : "", name: $("#tm-name").value, role: $("#tm-role").value, department: $("#tm-dept").value,
+      bio: $("#tm-bio").value, linkedin: $("#tm-linkedin").value.trim(), email: $("#tm-email").value.trim(), status: $("#tm-status").value,
+      photo: $("#tm-photo-preview").getAttribute("data-url") || "" };
+    if (p.linkedin && !/^https:\/\/([a-z]{2,3}\.)?linkedin\.com\//i.test(p.linkedin)) { toast("LinkedIn link must start with https://www.linkedin.com/", true); return; }
+    var btn = e.submitter || $("#team-form button[type=submit]"); btn.disabled = true;
+    api("team", { method: "POST", json: p }).then(function (r) {
+      toast(r.person.status === "published" ? "Profile saved and published." : "Draft saved.");
+      tm.editing = r.person; loadTeam(); closePerson();
+    }).catch(function (er) { toast(er.message, true); }).finally(function () { btn.disabled = false; });
   });
 })();

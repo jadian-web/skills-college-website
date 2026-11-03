@@ -17,7 +17,7 @@
   <form class="login-card" id="login-form" autocomplete="on">
     <img src="/assets/img/skills-college-logo.webp" alt="Skills College" width="190">
     <h1>Management portal</h1>
-    <p class="muted">Sign in to manage website images, blog posts, events and scorecard results.</p>
+    <p class="muted">Sign in to manage website images, blog posts, events, team profiles and scorecard results.</p>
     <label for="u">Username</label>
     <input id="u" name="username" autocomplete="username" required>
     <label for="p">Password</label>
@@ -35,6 +35,7 @@
       <button role="tab" id="tab-images" aria-selected="true" data-tab="images">Images</button>
       <button role="tab" id="tab-posts" aria-selected="false" data-tab="posts">Blog posts</button>
       <button role="tab" id="tab-events" aria-selected="false" data-tab="events">Events</button>
+      <button role="tab" id="tab-team" aria-selected="false" data-tab="team">Team</button>
       <button role="tab" id="tab-scorecards" aria-selected="false" data-tab="scorecards">Scorecard results <span class="count" id="sc-new" hidden></span></button>
     </nav>
     <div class="topbar-right">
@@ -210,6 +211,55 @@
       </form>
     </section>
 
+
+    <!-- TEAM -->
+    <section id="panel-team" data-panel="team" hidden>
+      <div id="team-list-view">
+        <div class="panel-head">
+          <div><h1>Team profiles</h1><p class="muted">Published profiles appear on About &gt; Meet the Team, in the order shown here. Use the arrows to change the order.</p></div>
+          <button class="btn primary" id="new-person">Add person</button>
+        </div>
+        <div class="team-admin" id="team-rows"><p class="muted">Loading&hellip;</p></div>
+      </div>
+      <form id="team-form" hidden>
+        <div class="panel-head">
+          <div><button type="button" class="link-btn" id="tm-back">&larr; All profiles</button><h1 id="tm-editor-title">Add person</h1></div>
+          <div class="row-actions"><a class="btn ghost" href="/about/team/" target="_blank" rel="noopener">View team page</a><button type="submit" class="btn primary">Save profile</button></div>
+        </div>
+        <div class="editor-grid">
+          <div class="editor-main">
+            <label for="tm-name">Full name <span class="req">*</span></label>
+            <input id="tm-name" required maxlength="120">
+            <label for="tm-role">Job title</label>
+            <input id="tm-role" maxlength="160" placeholder="e.g. Skills Development Consultant">
+            <label for="tm-dept">Department or team</label>
+            <input id="tm-dept" maxlength="120" list="tm-depts" placeholder="e.g. Learner Support">
+            <datalist id="tm-depts"></datalist>
+            <label for="tm-bio">Short bio <span class="hint">up to 700 characters</span></label>
+            <textarea id="tm-bio" rows="6" maxlength="700" placeholder="Two or three sentences about their experience and what they help clients or learners with."></textarea>
+            <label for="tm-linkedin">LinkedIn profile <span class="hint">optional, https://www.linkedin.com/in/...</span></label>
+            <input id="tm-linkedin" maxlength="300" type="url">
+            <label for="tm-email">Work email <span class="hint">optional, shown on the website</span></label>
+            <input id="tm-email" maxlength="160" type="email">
+          </div>
+          <aside class="editor-side">
+            <div class="side-card">
+              <label for="tm-status">Status</label>
+              <select id="tm-status"><option value="draft">Draft (hidden)</option><option value="published">Published</option></select>
+            </div>
+            <div class="side-card">
+              <label>Photo <span class="hint">square photos look best</span></label>
+              <div class="cover square" id="tm-photo-preview"><span class="muted">No photo</span></div>
+              <div class="row-actions">
+                <label class="btn ghost small">Upload<input type="file" id="tm-photo-upload" accept="image/jpeg,image/png,image/webp" hidden></label>
+                <button type="button" class="btn ghost small" id="tm-pick-photo">From library</button>
+                <button type="button" class="btn ghost small" id="tm-clear-photo">Remove</button>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </form>
+    </section>
     <!-- SCORECARD RESULTS -->
     <section id="panel-scorecards" data-panel="scorecards" hidden>
       <div class="panel-head">

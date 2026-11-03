@@ -175,8 +175,10 @@
     fetch("/api/posts/" + encodeURIComponent(slug)).then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (p) {
       document.title = p.title + " | Skills College";
       f("category").textContent = p.category; f("title").textContent = p.title; f("date").textContent = fmtDate(p.date);
-      f("summary").textContent = p.summary;
-      if (p.cover) { f("cover").src = p.cover; f("cover").alt = p.coverAlt || ""; f("cover").hidden = false; }
+      f("summary").textContent = p.summary || ""; f("summary").hidden = !p.summary;
+      var words = String((p.body || "").replace(/<[^>]+>/g, " ")).split(/\s+/).filter(Boolean).length;
+      f("readtime").textContent = Math.max(1, Math.round(words / 220)) + " min read";
+      if (p.cover) { f("cover").src = p.cover; f("cover").alt = p.coverAlt || ""; f("cover-wrap").hidden = false; }
       f("body").innerHTML = p.body || ""; /* sanitised on the server */
       if (p.takeaways && p.takeaways.length) { f("takeaways").innerHTML = p.takeaways.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join(""); f("takeaways-wrap").hidden = false; }
       if (p.related && p.related.length) { f("related").innerHTML = p.related.map(function (u) { return '<a class="card linked" href="' + esc(u) + '"><h3>' + esc(SERVICES[u] || u) + '</h3><span class="text-link">Learn more <span class="arrow" aria-hidden="true">&rarr;</span></span></a>'; }).join(""); f("related-wrap").hidden = false; }
@@ -187,6 +189,12 @@
         var cb = document.querySelector("[data-cta-btn]"); cb.href = "https://my.skillscollege.co.za"; cb.firstChild.textContent = "Find opportunities ";
       }
       art.querySelector("[data-article-loading]").hidden = true; art.querySelector("[data-article-body]").hidden = false;
+      var cl = art.querySelector("[data-copy-link]"), note = art.querySelector("[data-copy-note]");
+      if (cl) cl.addEventListener("click", function () {
+        var done = function () { note.textContent = "Link copied"; setTimeout(function () { note.textContent = ""; }, 2500); };
+        if (navigator.clipboard) navigator.clipboard.writeText(location.href).then(done, function () { note.textContent = location.href; });
+        else note.textContent = location.href;
+      });
     }).catch(function () {
       art.querySelector("[data-article-loading]").hidden = true; art.querySelector("[data-article-missing]").hidden = false;
     });
@@ -293,14 +301,21 @@
       if (opened) return; opened = true;
       stage.classList.add("is-open");
       if (reduceHand) { steps.forEach(turnOn); return; }
-      steps.forEach(function (n, i) { setTimeout(function () { turnOn(n); }, 500 + i * 620); });
+      steps.forEach(function (n, i) { setTimeout(function () { turnOn(n); }, 250 + i * 420); });
     };
     stage.classList.add("hand-ready");
     drawLines();
-    if (reduceHand || !("IntersectionObserver" in window)) { open(); }
+    // Only start once every hand image is downloaded and decoded, so the fingers never pop in late
+    var handImgs = Array.prototype.slice.call(stage.querySelectorAll(".hand-figure img, .sol-icon img"));
+    var decoded = Promise.all(handImgs.map(function (img) {
+      var done = img.complete ? Promise.resolve() : new Promise(function (r) { img.addEventListener("load", r); img.addEventListener("error", r); });
+      return done.then(function () { return img.decode ? img.decode().catch(function () {}) : null; });
+    }));
+    var start = function () { decoded.then(function () { requestAnimationFrame(function () { drawLines(); open(); }); }); };
+    if (reduceHand || !("IntersectionObserver" in window)) { start(); }
     else {
       var io = new IntersectionObserver(function (entries) {
-        entries.forEach(function (en) { if (en.isIntersecting) { open(); io.disconnect(); } });
+        entries.forEach(function (en) { if (en.isIntersecting) { start(); io.disconnect(); } });
       }, { threshold: 0.12 });
       io.observe(stage);
     }
@@ -332,15 +347,23 @@
     };
     if (evSlug) {
       q("[data-events-list]").hidden = true;
+      var evHero = document.querySelector(".hero"); if (evHero) evHero.hidden = true;
       fetch("/api/events/" + encodeURIComponent(evSlug)).then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (ev) {
         var f = function (k) { return evPage.querySelector('[data-ef="' + k + '"]'); };
         document.title = ev.title + " | Skills College";
         f("type").textContent = ev.type; f("title").textContent = ev.title;
-        f("facts").innerHTML = (ev.date ? "<span><strong>Date:</strong> " + esc(fmtDate(ev.date)) + (ev.time ? ", " + esc(ev.time) : "") + "</span>" : "") + (ev.location ? "<span><strong>Where:</strong> " + esc(ev.location) + "</span>" : "");
-        if (ev.cover) { f("cover").src = ev.cover; f("cover").alt = ev.coverAlt || ev.title; f("cover").hidden = false; }
+        var ICON = {
+          date: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>',
+          time: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
+          place: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></svg>'
+        };
+        f("facts").innerHTML = (ev.date ? "<li>" + ICON.date + "<span>" + esc(fmtDate(ev.date)) + "</span></li>" : "") + (ev.time ? "<li>" + ICON.time + "<span>" + esc(ev.time) + "</span></li>" : "") + (ev.location ? "<li>" + ICON.place + "<span>" + esc(ev.location) + "</span></li>" : "");
+        f("summary").textContent = ev.summary || ""; f("summary").hidden = !ev.summary || !!ev.body;
+        if (ev.cover) { f("cover").src = ev.cover; f("cover").alt = ev.coverAlt || ev.title; f("cover-wrap").hidden = false; }
         f("body").innerHTML = ev.body || (ev.summary ? "<p>" + esc(ev.summary) + "</p>" : "");
         var pics = ev.gallery || [];
         if (pics.length) {
+          f("gallery-count").textContent = pics.length + (pics.length === 1 ? " photo" : " photos") + " from the day. Select a photo to enlarge it.";
           f("gallery").innerHTML = pics.map(function (g, i) { return '<button type="button" data-i="' + i + '" aria-label="Open photo ' + (i + 1) + '"><img src="' + esc(g) + '" alt="" loading="lazy"></button>'; }).join("");
           f("gallery-wrap").hidden = false;
           var lb = document.querySelector("[data-lightbox]"), cur = 0;
@@ -352,7 +375,7 @@
           lb.addEventListener("keydown", function (e) { if (e.key === "ArrowLeft") show(cur - 1); if (e.key === "ArrowRight") show(cur + 1); });
         }
         q("[data-event-detail]").hidden = false;
-      }).catch(function () { q("[data-events-list]").hidden = false; });
+      }).catch(function () { q("[data-events-list]").hidden = false; if (evHero) evHero.hidden = false; });
     }
     if (!evSlug) fetch("/api/events").then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (list) {
       if (!list || !list.length) return;
@@ -372,6 +395,36 @@
           var t = b.textContent;
           evPage.querySelectorAll(".event-card").forEach(function (c) { c.hidden = t !== "All events" && c.getAttribute("data-type") !== t; });
           ["[data-upcoming]", "[data-past]"].forEach(function (sel) { var g = q(sel); if (!g.querySelector(".event-card")) return; g.hidden = !g.querySelector(".event-card:not([hidden])"); });
+        });
+      }
+    }).catch(function () {});
+  }
+  /* ---------- Meet the team (profiles managed in the portal) ---------- */
+  var teamPage = document.querySelector("[data-team-page]");
+  if (teamPage) {
+    var initials = function (n) { return String(n || "").split(/\s+/).filter(Boolean).slice(0, 2).map(function (w) { return w.charAt(0).toUpperCase(); }).join(""); };
+    var person = function (p) {
+      return '<article class="team-card" data-dept="' + esc(p.department) + '">' +
+        '<div class="team-photo">' + (p.photo ? '<img src="' + esc(p.photo) + '" alt="' + esc(p.name) + '" loading="lazy">' : '<span class="initials" aria-hidden="true">' + esc(initials(p.name)) + "</span>") + "</div>" +
+        '<div class="team-body"><h3>' + esc(p.name) + "</h3>" + (p.role ? '<p class="team-role">' + esc(p.role) + "</p>" : "") +
+        (p.department ? '<span class="team-dept">' + esc(p.department) + "</span>" : "") + (p.bio ? '<p class="team-bio">' + esc(p.bio) + "</p>" : "") +
+        ((p.linkedin || p.email) ? '<div class="team-links">' + (p.linkedin ? '<a href="' + esc(p.linkedin) + '" target="_blank" rel="noopener">LinkedIn</a>' : "") + (p.email ? '<a href="mailto:' + esc(p.email) + '">Email</a>' : "") + "</div>" : "") +
+        "</div></article>";
+    };
+    fetch("/api/team").then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (team) {
+      if (!team || !team.length) return;
+      teamPage.querySelector("[data-team-empty]").hidden = true;
+      var grid = teamPage.querySelector("[data-team-items]");
+      grid.innerHTML = team.map(person).join("");
+      var depts = []; team.forEach(function (p) { if (p.department && depts.indexOf(p.department) < 0) depts.push(p.department); });
+      if (depts.length > 1) {
+        var chips = teamPage.querySelector("[data-team-chips]");
+        chips.innerHTML = ["Everyone"].concat(depts).map(function (d, i) { return '<button class="chip" type="button" aria-pressed="' + (i === 0) + '">' + esc(d) + "</button>"; }).join("");
+        chips.hidden = false;
+        chips.addEventListener("click", function (e) {
+          var b = e.target.closest(".chip"); if (!b) return;
+          chips.querySelectorAll(".chip").forEach(function (c) { c.setAttribute("aria-pressed", String(c === b)); });
+          grid.querySelectorAll(".team-card").forEach(function (c) { c.hidden = b.textContent !== "Everyone" && c.getAttribute("data-dept") !== b.textContent; });
         });
       }
     }).catch(function () {});

@@ -7,7 +7,7 @@ import {
   verifyPassword, createSessionCookie, clearSessionCookie, readSession,
   isLocked, recordFail, clearFails, json,
 } from "./lib/auth.mjs";
-import { mediaStore, postsStore, stateStore, eventsStore, scorecardStore, IMAGE_TYPES, MAX_BYTES, sniffImage, slugify } from "./lib/stores.mjs";
+import { mediaStore, postsStore, stateStore, eventsStore, scorecardStore, teamStore, IMAGE_TYPES, MAX_BYTES, sniffImage, slugify } from "./lib/stores.mjs";
 
 const CATEGORIES = ["QCTO", "B-BBEE Skills Development", "Learnerships & Internships", "Bursaries", "Funding & Grants",
   "Workplace Learning", "Compliance Updates", "Learner Guidance", "Company News"];
@@ -197,6 +197,63 @@ async function handle(req, context) {
 
   if (route.startsWith("events/") && method === "DELETE") {
     await eventsStore().delete(slugify(route.slice(7)));
+    return json({ ok: true });
+  }
+
+  // ---------------- team profiles ----------------
+  if (route === "team" && method === "GET") {
+    const store = teamStore();
+    const { blobs } = await store.list();
+    const team = (await Promise.all(blobs.map((b) => store.get(b.key, { type: "json" })))).filter(Boolean)
+      .sort((a, b) => (a.order ?? 999) - (b.order ?? 999) || String(a.name).localeCompare(String(b.name)));
+    return json({ team });
+  }
+
+  if (route === "team" && method === "POST") {
+    const p = await req.json().catch(() => null);
+    if (!p || !text(p.name)) return json({ error: "A name is required." }, 400);
+    const store = teamStore();
+    const id = /^[a-z0-9-]{4,60}$/.test(p.id || "") ? p.id : slugify(p.name) + "-" + Date.now().toString(36);
+    const existing = await store.get(id, { type: "json" });
+    let order = Number.isFinite(+p.order) ? Math.max(0, Math.min(999, Math.round(+p.order))) : null;
+    if (order === null) {
+      if (existing) order = existing.order;
+      else { const { blobs } = await store.list(); order = blobs.length; }
+    }
+    const person = {
+      id,
+      name: text(p.name, 120),
+      role: text(p.role, 160),
+      department: text(p.department, 120),
+      bio: text(p.bio, 700),
+      photo: mediaUrl(p.photo),
+      linkedin: /^https:\/\/([a-z]{2,3}\.)?linkedin\.com\//i.test(p.linkedin || "") ? String(p.linkedin).slice(0, 300) : "",
+      email: /^[^@\s<>]+@[^@\s<>]+\.[^@\s<>]+$/.test(p.email || "") ? text(p.email, 160) : "",
+      order,
+      status: p.status === "published" ? "published" : "draft",
+      createdAt: existing?.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    await store.setJSON(id, person);
+    return json({ ok: true, person });
+  }
+
+  if (route === "team/order" && method === "POST") {
+    const { ids } = await req.json().catch(() => ({}));
+    if (!Array.isArray(ids)) return json({ error: "Bad request." }, 400);
+    const store = teamStore();
+    await Promise.all(ids.slice(0, 200).map(async (id, i) => {
+      if (!/^[a-z0-9-]+$/.test(id)) return;
+      const r = await store.get(id, { type: "json" }); if (!r) return;
+      r.order = i; await store.setJSON(id, r);
+    }));
+    return json({ ok: true });
+  }
+
+  if (route.startsWith("team/") && method === "DELETE") {
+    const id = route.slice(5);
+    if (!/^[a-z0-9-]+$/.test(id)) return json({ error: "Bad request." }, 400);
+    await teamStore().delete(id);
     return json({ ok: true });
   }
 
