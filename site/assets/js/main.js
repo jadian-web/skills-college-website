@@ -424,6 +424,17 @@
           (p.email ? '<a class="btn btn-outline btn-sm" href="mailto:' + esc(p.email) + '">' + MAIL + " " + esc(p.email) + "</a>" : "") + "</div>" : "") +
         "</div></article>";
     };
+    fetch("/api/team/groups").then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (groups) {
+      if (!groups || !groups.length) return;
+      var box = teamPage.querySelector("[data-team-groups]");
+      box.classList.toggle("single", groups.length === 1);
+      box.innerHTML = groups.map(function (g) {
+        return '<figure class="group-photo"><div class="gp-img"><img src="' + esc(g.photo) + '" alt="' + esc(g.alt || g.title) + '" loading="lazy"></div>' +
+          '<figcaption><h3>' + esc(g.title) + "</h3>" + (g.caption ? "<p>" + esc(g.caption) + "</p>" : "") + "</figcaption></figure>";
+      }).join("");
+      teamPage.querySelector("[data-team-groups-wrap]").hidden = false;
+      teamPage.querySelector("[data-team-empty]").hidden = true;
+    }).catch(function () {});
     fetch("/api/team").then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (all) {
       if (!all || !all.length) return;
       teamPage.querySelector("[data-team-empty]").hidden = true;

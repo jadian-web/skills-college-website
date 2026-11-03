@@ -220,6 +220,34 @@
           <button class="btn primary" id="new-person">Add person</button>
         </div>
         <div class="team-admin" id="team-rows"><p class="muted">Loading&hellip;</p></div>
+
+        <div class="panel-head mt">
+          <div><h2>Group photos</h2><p class="muted">Shown below the team cards, for example facilitators, assessors or project owners. Landscape photos work best.</p></div>
+          <button class="btn primary" id="new-group">Add group photo</button>
+        </div>
+        <form class="side-card group-form" id="group-form" hidden>
+          <div class="group-form-grid">
+            <div>
+              <div class="cover" id="gp-photo-preview"><span class="muted">No photo</span></div>
+              <div class="row-actions" style="justify-content:flex-start">
+                <label class="btn ghost small">Upload<input type="file" id="gp-photo-upload" accept="image/jpeg,image/png,image/webp" hidden></label>
+                <button type="button" class="btn ghost small" id="gp-pick-photo">From library</button>
+              </div>
+            </div>
+            <div>
+              <label for="gp-title">Title <span class="req">*</span></label>
+              <input id="gp-title" maxlength="120" required placeholder="e.g. Our facilitators">
+              <label for="gp-caption">Caption</label>
+              <textarea id="gp-caption" rows="3" maxlength="400" placeholder="One or two sentences about this team"></textarea>
+              <label for="gp-alt">Photo description (alt text)</label>
+              <input id="gp-alt" maxlength="200" placeholder="e.g. Twelve Skills College facilitators at the Soshanguve campus">
+              <label for="gp-status">Status</label>
+              <select id="gp-status"><option value="published">Published</option><option value="draft">Draft (hidden)</option></select>
+              <div class="row-actions" style="margin-top:16px"><button type="button" class="btn ghost" id="gp-cancel">Cancel</button><button type="submit" class="btn primary">Save group photo</button></div>
+            </div>
+          </div>
+        </form>
+        <div class="group-admin" id="group-rows"></div>
       </div>
       <form id="team-form" hidden>
         <div class="panel-head">

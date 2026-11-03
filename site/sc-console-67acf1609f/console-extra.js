@@ -8,7 +8,7 @@
 
   document.addEventListener("sc:ready", function () {
     P = window.SCPortal; esc = P.esc; api = P.api; toast = P.toast;
-    loadEvents(); loadScorecards(); loadTeam();
+    loadEvents(); loadScorecards(); loadTeam(); loadGroups();
   });
 
   /* ================= EVENTS ================= */
@@ -229,6 +229,66 @@
     api("team", { method: "POST", json: p }).then(function (r) {
       toast(r.person.status === "published" ? "Profile saved and published." : "Draft saved.");
       tm.editing = r.person; loadTeam(); closePerson();
+    }).catch(function (er) { toast(er.message, true); }).finally(function () { btn.disabled = false; });
+  });
+  /* ================= TEAM GROUP PHOTOS ================= */
+  var gp = { list: [], editing: null };
+  function loadGroups() {
+    return api("team-groups").then(function (d) {
+      gp.list = d.groups;
+      $("#group-rows").innerHTML = d.groups.length ? d.groups.map(function (g, i) {
+        return '<article class="g"><img src="' + esc(g.photo) + '" alt=""><div class="in"><h3>' + esc(g.title) + "</h3>" + (g.caption ? "<p>" + esc(g.caption) + "</p>" : "") +
+          '<span class="status ' + g.status + '">' + (g.status === "published" ? "Published" : "Draft") + "</span>" +
+          '<div class="acts"><button class="btn ghost small" data-gp-edit="' + esc(g.id) + '">Edit</button><button class="btn danger small" data-gp-del="' + esc(g.id) + '">Delete</button>' +
+          '<span class="ord"><button class="btn ghost small" data-gp-move="' + i + '" data-dir="-1" title="Move earlier"' + (i ? "" : " disabled") + '>&uarr;</button><button class="btn ghost small" data-gp-move="' + i + '" data-dir="1" title="Move later"' + (i < d.groups.length - 1 ? "" : " disabled") + ">&darr;</button></span></div></div></article>";
+      }).join("") : '<p class="empty">No group photos yet.</p>';
+    }).catch(function (e) { if (e.message !== "signed out") toast(e.message, true); });
+  }
+  function setGroupPhoto(url) {
+    $("#gp-photo-preview").innerHTML = url ? '<img src="' + esc(url) + '" alt="">' : '<span class="muted">No photo</span>';
+    $("#gp-photo-preview").setAttribute("data-url", url || "");
+  }
+  function openGroup(g) {
+    gp.editing = g || null;
+    $("#gp-title").value = g ? g.title : ""; $("#gp-caption").value = g ? g.caption || "" : ""; $("#gp-alt").value = g ? g.alt || "" : "";
+    $("#gp-status").value = g ? g.status : "published"; setGroupPhoto(g ? g.photo : "");
+    $("#group-form").hidden = false; $("#gp-title").focus();
+  }
+  document.addEventListener("click", function (e) {
+    if (!P) return;
+    var t = e.target;
+    if (t.closest("#new-group")) return openGroup(null);
+    if (t.closest("#gp-cancel")) { $("#group-form").hidden = true; return; }
+    if (t.closest("#gp-pick-photo")) return P.openPicker(setGroupPhoto);
+    var ed = t.closest("[data-gp-edit]");
+    if (ed) { var g = gp.list.filter(function (x) { return x.id === ed.getAttribute("data-gp-edit"); })[0]; if (g) openGroup(g); return; }
+    var del = t.closest("[data-gp-del]");
+    if (del) {
+      if (!confirm("Delete this group photo? The image stays in the image library.")) return;
+      api("team-groups/" + encodeURIComponent(del.getAttribute("data-gp-del")), { method: "DELETE" }).then(function () { toast("Group photo deleted."); loadGroups(); }).catch(function (er) { toast(er.message, true); });
+      return;
+    }
+    var mv = t.closest("[data-gp-move]");
+    if (mv) {
+      var i = +mv.getAttribute("data-gp-move"), j = i + (+mv.getAttribute("data-dir"));
+      var ids = gp.list.map(function (x) { return x.id; }); var tmp = ids[i]; ids[i] = ids[j]; ids[j] = tmp;
+      api("team-groups/order", { method: "POST", json: { ids: ids } }).then(function () { toast("Order saved."); loadGroups(); }).catch(function (er) { toast(er.message, true); });
+    }
+  });
+  document.addEventListener("change", function (e) {
+    if (e.target.id !== "gp-photo-upload" || !P) return;
+    var input = e.target;
+    P.uploadMany(input.files).then(function (res) { if (res[0]) setGroupPhoto(res[0].url); input.value = ""; });
+  });
+  $("#group-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var g = { id: gp.editing ? gp.editing.id : "", title: $("#gp-title").value, caption: $("#gp-caption").value, alt: $("#gp-alt").value,
+      status: $("#gp-status").value, photo: $("#gp-photo-preview").getAttribute("data-url") || "" };
+    if (!g.photo) { toast("Choose or upload a group photo first.", true); return; }
+    var btn = e.submitter || $("#group-form button[type=submit]"); btn.disabled = true;
+    api("team-groups", { method: "POST", json: g }).then(function () {
+      toast(g.status === "published" ? "Group photo saved and published." : "Draft saved.");
+      $("#group-form").hidden = true; loadGroups();
     }).catch(function (er) { toast(er.message, true); }).finally(function () { btn.disabled = false; });
   });
 })();

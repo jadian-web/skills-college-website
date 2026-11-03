@@ -7,7 +7,7 @@ import {
   verifyPassword, createSessionCookie, clearSessionCookie, readSession,
   isLocked, recordFail, clearFails, json,
 } from "./lib/auth.mjs";
-import { mediaStore, postsStore, stateStore, eventsStore, scorecardStore, teamStore, IMAGE_TYPES, MAX_BYTES, sniffImage, slugify } from "./lib/stores.mjs";
+import { mediaStore, postsStore, stateStore, eventsStore, scorecardStore, teamStore, groupStore, IMAGE_TYPES, MAX_BYTES, sniffImage, slugify } from "./lib/stores.mjs";
 
 const CATEGORIES = ["QCTO", "B-BBEE Skills Development", "Learnerships & Internships", "Bursaries", "Funding & Grants",
   "Workplace Learning", "Compliance Updates", "Learner Guidance", "Company News"];
@@ -197,6 +197,51 @@ async function handle(req, context) {
 
   if (route.startsWith("events/") && method === "DELETE") {
     await eventsStore().delete(slugify(route.slice(7)));
+    return json({ ok: true });
+  }
+
+  // ---------------- team group photos ----------------
+  if (route === "team-groups" && method === "GET") {
+    const store = groupStore();
+    const { blobs } = await store.list();
+    const groups = (await Promise.all(blobs.map((b) => store.get(b.key, { type: "json" })))).filter(Boolean)
+      .sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
+    return json({ groups });
+  }
+
+  if (route === "team-groups" && method === "POST") {
+    const p = await req.json().catch(() => null);
+    if (!p || !text(p.title)) return json({ error: "A title is required, for example Our facilitators." }, 400);
+    if (!mediaUrl(p.photo)) return json({ error: "Choose a group photo." }, 400);
+    const store = groupStore();
+    const id = /^[a-z0-9-]{4,60}$/.test(p.id || "") ? p.id : slugify(p.title) + "-" + Date.now().toString(36);
+    const existing = await store.get(id, { type: "json" });
+    let order = existing ? existing.order : (await store.list()).blobs.length;
+    const group = {
+      id, title: text(p.title, 120), caption: text(p.caption, 400), photo: mediaUrl(p.photo), alt: text(p.alt, 200),
+      order, status: p.status === "published" ? "published" : "draft",
+      createdAt: existing?.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString(),
+    };
+    await store.setJSON(id, group);
+    return json({ ok: true, group });
+  }
+
+  if (route === "team-groups/order" && method === "POST") {
+    const { ids } = await req.json().catch(() => ({}));
+    if (!Array.isArray(ids)) return json({ error: "Bad request." }, 400);
+    const store = groupStore();
+    await Promise.all(ids.slice(0, 100).map(async (id, i) => {
+      if (!/^[a-z0-9-]+$/.test(id)) return;
+      const r = await store.get(id, { type: "json" }); if (!r) return;
+      r.order = i; await store.setJSON(id, r);
+    }));
+    return json({ ok: true });
+  }
+
+  if (route.startsWith("team-groups/") && method === "DELETE") {
+    const id = route.slice(12);
+    if (!/^[a-z0-9-]+$/.test(id)) return json({ error: "Bad request." }, 400);
+    await groupStore().delete(id);
     return json({ ok: true });
   }
 

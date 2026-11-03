@@ -132,3 +132,15 @@ select.small{padding:4px 8px;font-size:.85rem;width:auto}
 .check-row{display:flex;gap:10px;align-items:flex-start;margin-top:14px;font-weight:400;cursor:pointer}
 .check-row input{width:18px;height:18px;margin-top:3px;flex-shrink:0}
 .badge-lead{display:inline-block;margin-left:6px;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9a3d05;background:#fff1e7;border-radius:999px;padding:2px 8px}
+.group-form{margin-bottom:16px}
+.group-form-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:20px}
+@media (max-width:760px){.group-form-grid{grid-template-columns:1fr}}
+.group-admin{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.group-admin .g{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.group-admin .g img{width:100%;aspect-ratio:3/2;object-fit:cover;display:block}
+.group-admin .g .in{padding:12px 14px}
+.group-admin .g h3{margin:0 0 4px;font-size:1rem}
+.group-admin .g p{margin:0 0 8px;color:var(--muted);font-size:.85rem}
+.group-admin .acts{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px}
+.group-admin .acts .ord{margin-left:auto;display:flex;gap:4px}
+.group-admin .empty{grid-column:1/-1;color:var(--muted)}
