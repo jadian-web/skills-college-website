@@ -26,6 +26,7 @@
         return r.json().catch(function () { return {}; }).then(function (data) {
           if (r.status === 401 && path !== "login") { showLogin("Your session has ended. Please sign in again."); throw new Error("signed out"); }
           if (!r.ok) {
+            if (!data.error && r.status === 413) throw new Error("That image is too large to upload (over Netlify's 6 MB limit). Resize it to under 3 MB and try again.");
             if (!data.error && (r.status === 502 || r.status === 404 || r.status === 405))
               throw new Error("The portal's server functions are not responding (" + r.status + "). Open " + location.origin + "/api/admin/health and send the result to your developer.");
             throw new Error(data.error || "Something went wrong (" + r.status + ").");
@@ -91,9 +92,59 @@
     }).join("") : '<p class="empty">No images uploaded yet.</p>';
   }
 
+  /* Large photos are resized and compressed in the browser before upload.
+     Netlify rejects requests over about 6 MB (error 413), and phone photos are often bigger. */
+  var TARGET = 2.8 * 1024 * 1024, MAX_SIDE = 2400;
+  function loadImage(file) {
+    return new Promise(function (res, rej) {
+      var url = URL.createObjectURL(file), img = new Image();
+      img.onload = function () { URL.revokeObjectURL(url); res(img); };
+      img.onerror = function () { URL.revokeObjectURL(url); rej(new Error(file.name + " could not be read as an image. Save it as JPG or PNG and try again.")); };
+      img.src = url;
+    });
+  }
+  function toBlob(canvas, type, q) { return new Promise(function (res) { canvas.toBlob(res, type, q); }); }
+  function shrink(file) {
+    if (file.type === "image/gif") {
+      if (file.size > TARGET) return Promise.reject(new Error(file.name + " is a GIF larger than 2.8 MB. Animated GIFs can't be compressed here; use a smaller GIF or a JPG."));
+      return Promise.resolve(file);
+    }
+    return loadImage(file).then(function (img) {
+      var w = img.naturalWidth, h = img.naturalHeight;
+      if (file.size <= TARGET && Math.max(w, h) <= MAX_SIDE) return file;
+      var keepAlpha = file.type === "image/png" || file.type === "image/webp";
+      var tryOnce = function (side, q) {
+        var scale = Math.min(1, side / Math.max(w, h));
+        var c = document.createElement("canvas"); c.width = Math.round(w * scale); c.height = Math.round(h * scale);
+        var ctx = c.getContext("2d");
+        if (!keepAlpha) { ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height); }
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+        return toBlob(c, keepAlpha ? "image/webp" : "image/jpeg", q).then(function (b) {
+          // some browsers cannot make WebP and fall back to PNG; use JPEG then
+          if (b && keepAlpha && b.type !== "image/webp") return toBlob(c, "image/jpeg", q);
+          return b;
+        });
+      };
+      var attempts = [[MAX_SIDE, .86], [MAX_SIDE, .78], [2000, .76], [1600, .74], [1280, .72]];
+      var step = function (i) {
+        return tryOnce(attempts[i][0], attempts[i][1]).then(function (b) {
+          if (!b) throw new Error(file.name + " could not be compressed in this browser. Resize it to under 2.8 MB and try again.");
+          if (b.size <= TARGET || i === attempts.length - 1) {
+            if (b.size > TARGET) throw new Error(file.name + " is still too large after compressing. Resize it and try again.");
+            var ext = b.type === "image/webp" ? ".webp" : ".jpg";
+            return new File([b], file.name.replace(/\.[a-z0-9]+$/i, "") + ext, { type: b.type });
+          }
+          return step(i + 1);
+        });
+      };
+      return step(0);
+    });
+  }
   function upload(file, slot) {
-    var fd = new FormData(); fd.append("file", file); if (slot) fd.append("slot", slot);
-    return api("media", { method: "POST", body: fd });
+    return shrink(file).then(function (f) {
+      var fd = new FormData(); fd.append("file", f); if (slot) fd.append("slot", slot);
+      return api("media", { method: "POST", body: fd });
+    });
   }
 
   $("#slots").addEventListener("change", function (ev) {
