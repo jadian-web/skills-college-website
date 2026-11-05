@@ -5,14 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Contact | Skills College</title>
 <meta name="description" content="Contact Skills College about Skills Development strategy, learnerships, bursaries, accredited training or QCTO.">
+<link rel="canonical" href="https://skillscollege.co.za/contact/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Skills College">
+<meta property="og:locale" content="en_ZA">
 <meta property="og:title" content="Contact | Skills College">
 <meta property="og:description" content="Contact Skills College about Skills Development strategy, learnerships, bursaries, accredited training or QCTO.">
-<meta property="og:type" content="website">
-<meta property="og:image" content="/assets/img/hero-learner-campus.jpg">
+<meta property="og:url" content="https://skillscollege.co.za/contact/">
+<meta property="og:image" content="https://skillscollege.co.za/media/social-preview.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Skills College: Turn Skills Development into Business Impact">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Contact | Skills College">
+<meta name="twitter:description" content="Contact Skills College about Skills Development strategy, learnerships, bursaries, accredited training or QCTO.">
+<meta name="twitter:image" content="https://skillscollege.co.za/media/social-preview.jpg">
 <meta name="theme-color" content="#141B4D">
-<link rel="icon" type="image/png" href="/assets/img/favicon.png">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/img/favicon-32.png">
 <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
-<link rel="stylesheet" href="/assets/css/styles.css">
+<link rel="manifest" href="/site.webmanifest">
+<link rel="stylesheet" href="/assets/css/styles.css?v=36281fbb">
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
@@ -40,7 +53,7 @@
       <p class="eyebrow">Let&#x27;s talk</p>
       <h1><span class="accent">Tell us</span> what you are trying to achieve</h1>
       <p class="lead">Whether you are planning for your own organisation or advising a client, tell us what you need. The right member of our team will contact you to discuss your Skills Development programme.</p>
-      <div class="actions"><a class="btn btn-blue" href="#enquiry">Send enquiry <span class="arrow" aria-hidden="true">&rarr;</span></a></div>
+      <div class="actions"><a class="btn btn-orange" href="#enquiry">Send enquiry <span class="arrow" aria-hidden="true">&rarr;</span></a></div>
       
     </div>
     <div class="hero-media">
@@ -54,18 +67,19 @@
   <p class="muted" style="margin:-12px 0 22px">Complete the form to request a consultation. Our team will contact you using the details you provide.</p>
   <form name="enquiry" method="POST" action="/contact/thank-you/" data-netlify="true" netlify-honeypot="bot-field" data-enquiry novalidate>
     <input type="hidden" name="form-name" value="enquiry">
-    <p class="hidden-field"><label>Leave this empty <input name="bot-field"></label></p>
+    <p class="hidden-field" aria-hidden="true"><label>Leave this empty <input name="bot-field" tabindex="-1" autocomplete="off"></label></p>
     <input type="hidden" name="source-page" id="source-page" value="">
     <div class="fields">
-      <div class="field"><label for="name">Name <span class="req">*</span></label><input type="text" id="name" name="name" autocomplete="name" required><p class="form-error">Please enter your name.</p></div>
-      <div class="field"><label for="company">Company</label><input type="text" id="company" name="company" autocomplete="organization"></div>
-      <div class="field"><label for="email">Email address <span class="req">*</span></label><input type="email" id="email" name="email" autocomplete="email" required><p class="form-error">Please enter a valid email address.</p></div>
-      <div class="field"><label for="phone">Phone</label><input type="tel" id="phone" name="phone" autocomplete="tel"></div>
-      <div class="field full"><label for="interest">I am interested in: <span class="req">*</span></label><select id="interest" name="interest" required><option value="">Select an option</option><option>Skills Development Strategy</option><option>Learnerships &amp; Internships</option><option>Higher Education Bursaries</option><option>Disability Skills Development</option><option>B-BBEE Absorption</option><option>Accredited Training</option><option>QCTO</option><option>B-BBEE scorecard advice</option><option>Events</option><option>Other</option></select><p class="form-error">Please choose what you are interested in.</p></div>
-      <div class="field full"><label for="message">Message <span class="req">*</span></label><textarea id="message" name="message" required></textarea><p class="form-error">Please tell us a little about what you need.</p></div>
+      <div class="field"><label for="name">Name <span class="req">*</span></label><input type="text" id="name" name="name" autocomplete="name" required minlength="2" maxlength="100" aria-describedby="name-err"><p class="form-error" id="name-err">Please enter your name (at least 2 characters).</p></div>
+      <div class="field"><label for="company">Company</label><input type="text" id="company" name="company" autocomplete="organization" maxlength="150"></div>
+      <div class="field"><label for="email">Email address <span class="req">*</span></label><input type="email" id="email" name="email" autocomplete="email" required maxlength="254" pattern="[^@\s]+@[^@\s]+\.[^@\s]{2,}" aria-describedby="email-err"><p class="form-error" id="email-err">Please enter a valid email address, for example name@company.co.za.</p></div>
+      <div class="field"><label for="phone">Phone</label><input type="tel" id="phone" name="phone" autocomplete="tel" maxlength="20" pattern="\+?[0-9][0-9 \-]{7,18}" aria-describedby="phone-err"><p class="form-error" id="phone-err">Please enter a valid phone number, for example 012 541 0100.</p></div>
+      <div class="field full"><label for="interest">I am interested in: <span class="req">*</span></label><select id="interest" name="interest" required aria-describedby="interest-err"><option value="">Select an option</option><option>Skills Development Strategy</option><option>Learnerships &amp; Internships</option><option>Higher Education Bursaries</option><option>Disability Skills Development</option><option>B-BBEE Absorption</option><option>Accredited Training</option><option>QCTO</option><option>B-BBEE scorecard advice</option><option>Events</option><option>Other</option></select><p class="form-error" id="interest-err">Please choose what you are interested in.</p></div>
+      <div class="field full"><label for="message">Message <span class="req">*</span></label><textarea id="message" name="message" required minlength="10" maxlength="3000" aria-describedby="message-err"></textarea><p class="form-error" id="message-err">Please tell us a little about what you need (at least 10 characters).</p></div>
     </div>
     <label class="consent"><input type="checkbox" name="popia-consent" value="yes" required> <span>I consent to Skills College processing my personal information for the purpose of responding to this enquiry. <a href="/privacy-policy/">View Privacy Policy</a>.</span></label>
     <p class="form-error">Please give consent so we can respond to your enquiry.</p>
+    <p class="form-alert" data-form-alert role="alert" hidden></p>
     <div class="submit-row"><button class="btn btn-orange" type="submit">Send enquiry <span class="arrow" aria-hidden="true">&rarr;</span></button></div>
   </form>
 </div>
@@ -84,14 +98,14 @@
       <p>Skills College provides end-to-end Skills Development solutions for employers, consultants and learners.</p>
     </div>
     <div>
-      <h3>Explore</h3>
+      <h2>Explore</h2>
       <ul><li><a href="/">Home</a></li><li><a href="/for-employers/">For Employers and Consultants</a></li><li><a href="https://my.skillscollege.co.za" target="_blank" rel="noopener">For Learners</a></li><li><a href="/qcto/">QCTO</a></li><li><a href="/about/">About</a></li><li data-needs-posts hidden><a href="/resources/">Resources</a></li><li><a href="/contact/">Contact</a></li></ul>
     </div>
     <div class="footer-contact">
       <p><strong>Head Office</strong>33 Sovereign Drive, Route 21 Corporate Park, Irene, Centurion</p>
     </div>
     <div class="footer-contact">
-      <h3>Get in touch</h3>
+      <h2>Get in touch</h2>
       <p><strong>Employer and consultant enquiries</strong><a href="tel:+27125410100">012 541 0100</a><a href="mailto:sales@skillscollege.co.za">sales@skillscollege.co.za</a></p>
       <p><strong>Recruitment enquiries</strong><a href="tel:+27824875996">082 487 5996</a><a href="mailto:recruitment@skillscollege.co.za">recruitment@skillscollege.co.za</a></p>
     </div>
@@ -104,10 +118,18 @@
         <li><a href="/paia-manual/">PAIA Manual</a></li>
         <li><a href="/cookie-policy/">Cookie Policy</a></li>
         <li><a href="/disclaimer/">Disclaimer</a></li>
+        <li><a href="/terms-and-conditions/">Terms &amp; Conditions</a></li>
+        <li><button type="button" class="link-like" data-cookie-settings>Cookie settings</button></li>
       </ul>
     </div>
   </div>
 </footer>
-<script src="/assets/js/main.js" defer></script>
+<div class="cookie-banner" data-cookie-banner role="region" aria-label="Cookie choices" hidden>
+  <div class="cookie-inner">
+    <p><strong>Cookies on this website.</strong> We use only the storage needed for the website to work. With your permission we may also use anonymous statistics to improve it. Read our <a href="/cookie-policy/">Cookie Policy</a>.</p>
+    <div class="cookie-actions"><button type="button" class="btn btn-outline btn-sm" data-consent="essential">Essential only</button><button type="button" class="btn btn-orange btn-sm" data-consent="all">Accept all</button></div>
+  </div>
+</div>
+<script src="/assets/js/main.js?v=0c871524" defer></script>
 </body>
 </html>

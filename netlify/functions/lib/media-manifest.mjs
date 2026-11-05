@@ -171,12 +171,14 @@ export default [
    "/contact/",
    "/contact/thank-you/",
    "/privacy-policy/",
-   "/paia-manual/",
+   "/terms-and-conditions/",
    "/cookie-policy/",
    "/disclaimer/",
+   "/paia-manual/",
    "/resources/article/",
    "/404.html",
-   "/b-bbee-scorecard-calculator/"
+   "/b-bbee-scorecard-calculator/",
+   "/social-preview/"
   ],
   "label": "Logo (footer, white)"
  },
@@ -209,14 +211,24 @@ export default [
    "/contact/",
    "/contact/thank-you/",
    "/privacy-policy/",
-   "/paia-manual/",
+   "/terms-and-conditions/",
    "/cookie-policy/",
    "/disclaimer/",
+   "/paia-manual/",
    "/resources/article/",
    "/404.html",
-   "/b-bbee-scorecard-calculator/"
+   "/b-bbee-scorecard-calculator/",
+   "/social-preview/"
   ],
   "label": "Logo (header)"
+ },
+ {
+  "name": "social-preview.jpg",
+  "alt": "Social preview image for Skills College | B-BBEE Skills Development Specialist",
+  "pages": [
+   "/social-preview/"
+  ],
+  "label": "Social media preview image (1200 x 630, shown when links are shared)"
  },
  {
   "name": "team-discussion.jpg",

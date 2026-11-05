@@ -23,25 +23,37 @@ symbol in the footer 5 times quickly** (within about 2 seconds). You can also
 bookmark the address it opens.
 
 ## Security (please read)
-- The password is stored only as a salted scrypt hash, never in plain text.
-- Sessions use a signed, HttpOnly, Secure, SameSite=Strict cookie and expire
-  after 8 hours.
-- After 5 wrong passwords the sign-in is locked for 15 minutes per address.
-- Uploads are checked by file signature (JPG, PNG, WebP, GIF only; no SVG)
-  and blog HTML is cleaned on the server before it is published.
-- The portal page is marked noindex and is not linked or listed anywhere.
-  Hiding it keeps casual visitors away; the password is what protects it.
+- **Change the set-up password first.** Sign in, open the **Account** tab and choose a new password
+  (12+ characters, a mix of letters, numbers and symbols). A warning bar shows until you do.
+  Changing it signs out every other device.
+- Passwords are stored only as salted scrypt hashes (N=2^17, r=8, p=1) and checked in constant time.
+- Sign-in is rate limited: 5 wrong passwords lock that connection for 15 minutes, repeat lockouts
+  double (up to 24 hours), and 20 wrong passwords in an hour from anywhere lock sign-in for 30 minutes.
+- No secrets are in the website's browser code. The session signing key is generated automatically
+  and kept in Netlify Blobs (or set your own with the SESSION_SECRET environment variable).
+- Sessions use a signed, HttpOnly, Secure, SameSite=Strict cookie and expire after 8 hours.
+- Uploads are checked by file signature (JPG, PNG, WebP, GIF only) and all HTML is cleaned on the server.
+- Forms: Netlify honeypot field, a minimum fill time, field validation, and the scorecard API is limited
+  to 8 submissions per hour per connection. Netlify also filters form spam automatically.
+- Security headers (netlify.toml): HTTPS-only (HSTS), Content Security Policy, no framing, no sniffing,
+  restricted browser features.
+- Keep the GitHub repository **private**.
 
-**Strongly recommended after the first deploy:** in Netlify go to
-Site configuration > Environment variables and add:
-- `ADMIN_PASSWORD_HASH` - run `node tools/new-password-hash.mjs "NewPassword"`
-  and paste the first line. (The password was shared in a chat, so change it.)
-- `SESSION_SECRET` - the second value printed by the same command.
-- `ADMIN_USERNAME` - optional, defaults to `jadian`.
-Then redeploy. Changing SESSION_SECRET signs everyone out.
+## Force HTTPS (one-time check in Netlify)
+Site configuration > Domain management > HTTPS: make sure the certificate is active. Netlify then
+redirects every http:// request to https:// automatically, and the HSTS header tells browsers to
+always use https. If you use both skillscollege.co.za and www.skillscollege.co.za, set the one you
+prefer as the primary domain so the other redirects to it.
+
+## Search engines and sharing
+- `/sitemap.xml` is generated live (pages + published blog posts + events). Submit it once in
+  Google Search Console.
+- `robots.txt` points search engines to the sitemap.
+- `/social-preview/` (not linked or indexed) shows how every page looks when shared.
+- The social preview image can be replaced in the portal (Images > "Social media preview image").
 
 ## Where things live
-- `site/` - the public website (HTML, CSS, JS, original images)
+- `site/` - the public website (HTML, CSS, JS, original images, favicon, robots.txt, web manifest)
 - `site/sc-console-67acf1609f/` - the portal page
 - `netlify/functions/` - portal API, image server and blog API
 - Images on pages load from `/media/<file>`: the portal's replacement if one

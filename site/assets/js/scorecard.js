@@ -4,6 +4,7 @@
   "use strict";
   var form = document.querySelector("[data-calc]");
   if (!form) return;
+  var startedAt = Date.now();
   var resultBox = document.querySelector("[data-result]");
   var $ = function (id) { return document.getElementById(id); };
   var num = function (id) {
@@ -226,7 +227,7 @@
       sector: sectorLabel, seta: $("seta").value, turnover: num("turnover"), category: res.c.cat, scorecard: res.card,
       level: L[1], recognition: L[2], points: res.total, discounted: res.discounted,
       elements: res.els.map(function (x) { return { name: x.name, points: r2(x.points), max: x.max, bonus: r2(x.bonus), subMin: x.subMin }; }),
-      notes: res.notes, inputs: inputs, consent: $("consent").checked, botField: form.querySelector('[name="bot-field"]').value
+      notes: res.notes, inputs: inputs, consent: $("consent").checked, botField: form.querySelector('[name="bot-field"]').value, elapsed: Date.now() - startedAt
     };
     var api = fetch("/api/scorecard", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) })
       .then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });

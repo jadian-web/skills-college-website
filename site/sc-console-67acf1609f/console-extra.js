@@ -291,4 +291,31 @@
       $("#group-form").hidden = true; loadGroups();
     }).catch(function (er) { toast(er.message, true); }).finally(function () { btn.disabled = false; });
   });
+  /* ================= ACCOUNT / PASSWORD ================= */
+  var RULES = {
+    len: function (v) { return v.length >= 12; },
+    mix: function (v) { return [/[a-z]/, /[A-Z]/, /\d/, /[^A-Za-z0-9]/].filter(function (r) { return r.test(v); }).length >= 3; },
+    user: function (v) { return v && v.toLowerCase().indexOf("jadian") < 0; },
+    common: function (v) { return v && !/(password|skills ?college|skills2026|qwerty|123456|letmein|welcome)/i.test(v) && !/(.)\1{3,}/.test(v); }
+  };
+  $("#pw-new").addEventListener("input", function () {
+    var v = this.value;
+    $$("#pw-rules li").forEach(function (li) { li.classList.toggle("ok", RULES[li.getAttribute("data-rule")](v)); });
+  });
+  document.addEventListener("click", function (e) { if (e.target.closest("#go-account")) $("#tab-account").click(); });
+  $("#pw-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var err = $("#pw-error"); err.hidden = true;
+    var cur = $("#pw-current").value, nw = $("#pw-new").value, cf = $("#pw-confirm").value;
+    var bad = Object.keys(RULES).filter(function (k) { return !RULES[k](nw); });
+    if (bad.length) { err.textContent = "The new password does not meet all the rules above."; err.hidden = false; return; }
+    if (nw !== cf) { err.textContent = "The two new passwords do not match."; err.hidden = false; return; }
+    var btn = $("#pw-btn"); btn.disabled = true; btn.textContent = "Changing...";
+    api("account/password", { method: "POST", json: { current: cur, next: nw } }).then(function () {
+      toast("Password changed. Other devices have been signed out.");
+      $("#pw-form").reset(); $$("#pw-rules li").forEach(function (li) { li.classList.remove("ok"); });
+      P.checkSetup({ usingSetupPassword: false });
+    }).catch(function (er) { err.textContent = er.message; err.hidden = false; })
+      .finally(function () { btn.disabled = false; btn.textContent = "Change password"; });
+  });
 })();

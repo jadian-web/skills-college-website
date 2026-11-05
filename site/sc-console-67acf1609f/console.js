@@ -49,13 +49,14 @@
     ev.preventDefault();
     var b = $("#login-btn"); b.disabled = true; b.textContent = "Signing in...";
     api("login", { method: "POST", json: { username: $("#u").value, password: $("#p").value } })
-      .then(function () { $("#p").value = ""; showApp(); })
+      .then(function () { $("#p").value = ""; showApp(); return api("session").then(checkSetup); })
       .catch(function (err) { var e = $("#login-error"); e.textContent = err.message; e.hidden = false; })
       .finally(function () { b.disabled = false; b.textContent = "Sign in"; });
   });
   $("#logout").addEventListener("click", function () { api("logout", { method: "POST" }).finally(function () { showLogin(); }); });
 
-  api("session").then(showApp).catch(function () { showLogin(); });
+  function checkSetup(d) { var w = $("#setup-warning"); if (w) w.hidden = !(d && d.usingSetupPassword); }
+  api("session").then(function (d) { showApp(); checkSetup(d); }).catch(function () { showLogin(); });
 
   /* ---------- tabs ---------- */
   $$(".tabs button").forEach(function (t) {
@@ -94,7 +95,7 @@
 
   /* Large photos are resized and compressed in the browser before upload.
      Netlify rejects requests over about 6 MB (error 413), and phone photos are often bigger. */
-  var TARGET = 2.8 * 1024 * 1024, MAX_SIDE = 2400;
+  var TARGET = 2.8 * 1024 * 1024, MAX_SIDE = 2000, OPTIMISE_OVER = 450 * 1024;
   function loadImage(file) {
     return new Promise(function (res, rej) {
       var url = URL.createObjectURL(file), img = new Image();
@@ -111,7 +112,7 @@
     }
     return loadImage(file).then(function (img) {
       var w = img.naturalWidth, h = img.naturalHeight;
-      if (file.size <= TARGET && Math.max(w, h) <= MAX_SIDE) return file;
+      if (file.size <= OPTIMISE_OVER && Math.max(w, h) <= MAX_SIDE) return file;
       var keepAlpha = file.type === "image/png" || file.type === "image/webp";
       var tryOnce = function (side, q) {
         var scale = Math.min(1, side / Math.max(w, h));
@@ -125,11 +126,12 @@
           return b;
         });
       };
-      var attempts = [[MAX_SIDE, .86], [MAX_SIDE, .78], [2000, .76], [1600, .74], [1280, .72]];
+      var attempts = [[MAX_SIDE, .82], [MAX_SIDE, .76], [1600, .74], [1280, .72]];
       var step = function (i) {
         return tryOnce(attempts[i][0], attempts[i][1]).then(function (b) {
           if (!b) throw new Error(file.name + " could not be compressed in this browser. Resize it to under 2.8 MB and try again.");
-          if (b.size <= TARGET || i === attempts.length - 1) {
+          if (i === 0 && b.size >= file.size && Math.max(w, h) <= MAX_SIDE && file.size <= TARGET) return file; // original was already smaller
+          if (b.size <= Math.min(TARGET, 900 * 1024) || i === attempts.length - 1) {
             if (b.size > TARGET) throw new Error(file.name + " is still too large after compressing. Resize it and try again.");
             var ext = b.type === "image/webp" ? ".webp" : ".jpg";
             return new File([b], file.name.replace(/\.[a-z0-9]+$/i, "") + ext, { type: b.type });
@@ -318,7 +320,7 @@
     }
   });
   // shared helpers for the Events and Scorecard tabs (console-extra.js)
-  window.SCPortal = { api: api, toast: toast, esc: esc, openPicker: openPicker, uploadMany: uploadMany, slugify: slugify };
+  window.SCPortal = { checkSetup: checkSetup, api: api, toast: toast, esc: esc, openPicker: openPicker, uploadMany: uploadMany, slugify: slugify };
   // Paste as plain text to avoid bringing in Word formatting
   $("#f-body").addEventListener("paste", function (e) {
     e.preventDefault(); var t = (e.clipboardData || window.clipboardData).getData("text/plain");

@@ -7,7 +7,6 @@
 <meta name="referrer" content="no-referrer">
 <title>Skills College</title>
 <link rel="icon" type="image/png" href="/assets/img/favicon.png">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="console.css">
 </head>
 <body>
@@ -36,6 +35,7 @@
       <button role="tab" id="tab-posts" aria-selected="false" data-tab="posts">Blog posts</button>
       <button role="tab" id="tab-events" aria-selected="false" data-tab="events">Events</button>
       <button role="tab" id="tab-team" aria-selected="false" data-tab="team">Team</button>
+      <button role="tab" id="tab-account" aria-selected="false" data-tab="account">Account</button>
       <button role="tab" id="tab-scorecards" aria-selected="false" data-tab="scorecards">Scorecard results <span class="count" id="sc-new" hidden></span></button>
     </nav>
     <div class="topbar-right">
@@ -44,6 +44,7 @@
     </div>
   </header>
 
+  <div class="warn-bar" id="setup-warning" hidden>You are still using the original set-up password. <button type="button" class="link-btn" id="go-account">Change it now</button> to keep the portal secure.</div>
   <main class="workspace">
     <!-- IMAGES -->
     <section id="panel-images" data-panel="images">
@@ -287,6 +288,29 @@
             </div>
           </aside>
         </div>
+      </form>
+    </section>
+
+    <!-- ACCOUNT -->
+    <section id="panel-account" data-panel="account" hidden>
+      <div class="panel-head"><div><h1>Account</h1><p class="muted">Change the portal password. Changing it signs out every other device.</p></div></div>
+      <form class="side-card account-form" id="pw-form" autocomplete="on">
+        <input type="text" name="username" autocomplete="username" value="jadian" hidden>
+        <label for="pw-current">Current password</label>
+        <input id="pw-current" type="password" autocomplete="current-password" required maxlength="128">
+        <label for="pw-new">New password</label>
+        <input id="pw-new" type="password" autocomplete="new-password" required minlength="12" maxlength="128" aria-describedby="pw-rules">
+        <ul class="pw-rules" id="pw-rules">
+          <li data-rule="len">At least 12 characters</li>
+          <li data-rule="mix">At least three of: lowercase, uppercase, numbers, symbols</li>
+          <li data-rule="user">Does not contain the username</li>
+          <li data-rule="common">No common words or patterns (password, Skills College, 123456...)</li>
+        </ul>
+        <label for="pw-confirm">Confirm new password</label>
+        <input id="pw-confirm" type="password" autocomplete="new-password" required maxlength="128">
+        <p class="error" id="pw-error" role="alert" hidden></p>
+        <button class="btn primary" type="submit" id="pw-btn">Change password</button>
+        <p class="muted small-print">Passwords are stored only as a salted scrypt hash. After 5 wrong attempts sign-in is locked for 15 minutes, and repeat lockouts get longer.</p>
       </form>
     </section>
     <!-- SCORECARD RESULTS -->

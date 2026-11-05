@@ -5,7 +5,7 @@ import { sanitize } from "./lib/sanitize.mjs";
 import manifest from "./lib/media-manifest.mjs";
 import {
   verifyPassword, createSessionCookie, clearSessionCookie, readSession,
-  isLocked, recordFail, clearFails, json,
+  isLocked, recordFail, clearFails, json, pause, credentialStatus, passwordProblems, changePassword,
 } from "./lib/auth.mjs";
 import { mediaStore, postsStore, stateStore, eventsStore, scorecardStore, teamStore, groupStore, IMAGE_TYPES, MAX_BYTES, sniffImage, slugify } from "./lib/stores.mjs";
 
@@ -32,20 +32,45 @@ async function handle(req, context) {
     if (until) return json({ error: `Too many attempts. Try again after ${new Date(until).toLocaleTimeString("en-ZA", { timeZone: "Africa/Johannesburg" })}.` }, 429);
     let body = {};
     try { body = await req.json(); } catch {}
-    if (!verifyPassword(body.username, body.password)) {
+    if (typeof body.username !== "string" || typeof body.password !== "string" || body.password.length > 256 || body.username.length > 100) {
+      await recordFail(ip); await pause(400);
+      return json({ error: "Incorrect username or password." }, 401);
+    }
+    if (!(await verifyPassword(body.username, body.password))) {
       await recordFail(ip);
+      await pause(300 + Math.floor(Math.random() * 400));
       return json({ error: "Incorrect username or password." }, 401);
     }
     await clearFails(ip);
-    return json({ ok: true }, 200, { "set-cookie": createSessionCookie() });
+    return json({ ok: true }, 200, { "set-cookie": await createSessionCookie() });
   }
 
-  const session = readSession(req);
+  const session = await readSession(req);
   if (!session) return json({ error: "Not signed in." }, 401);
   if (method !== "GET" && req.headers.get("x-sc-admin") !== "1") return json({ error: "Bad request." }, 400);
 
   if (route === "logout" && method === "POST") return json({ ok: true }, 200, { "set-cookie": clearSessionCookie() });
-  if (route === "session") return json({ user: session.u, expires: session.exp });
+  if (route === "session") return json({ user: session.u, expires: session.exp, ...(await credentialStatus()) });
+
+  // ---------------- change password ----------------
+  if (route === "account/password" && method === "POST") {
+    const until = await isLocked(ip);
+    if (until) return json({ error: "Too many attempts. Try again later." }, 429);
+    const b = await req.json().catch(() => ({}));
+    const st = await credentialStatus();
+    if (st.source === "environment") return json({ error: "The password is set by the ADMIN_PASSWORD_HASH environment variable in Netlify. Remove that variable to manage the password here." }, 409);
+    if (typeof b.current !== "string" || !(await verifyPassword(session.u, b.current))) {
+      await recordFail(ip); await pause(400);
+      return json({ error: "Your current password is not correct." }, 403);
+    }
+    const problems = passwordProblems(b.next);
+    if (problems.length) return json({ error: "The new password needs " + problems.join("; ") + "." }, 400);
+    if (b.next === b.current) return json({ error: "Choose a password different from the current one." }, 400);
+    await changePassword(b.next);
+    await clearFails(ip);
+    // the old session is now invalid; issue a fresh one
+    return json({ ok: true }, 200, { "set-cookie": await createSessionCookie() });
+  }
 
   // ---------------- images ----------------
   if (route === "media" && method === "GET") {

@@ -1,2 +1,6 @@
+# Skills College
 User-agent: *
 Allow: /
+Disallow: /api/
+
+Sitemap: https://skillscollege.co.za/sitemap.xml

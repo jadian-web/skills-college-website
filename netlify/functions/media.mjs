@@ -21,14 +21,15 @@ async function handle(req) {
     return new Response(hit.data, {
       headers: {
         "content-type": hit.metadata?.contentType || "application/octet-stream",
-        "cache-control": "public, max-age=120",
+        "cache-control": "public, max-age=300, stale-while-revalidate=86400",
+        "netlify-cdn-cache-control": "public, s-maxage=300, stale-while-revalidate=86400",
         "x-content-type-options": "nosniff",
       },
     });
   }
   if (isUpload) return new Response("Not found", { status: 404 });
   // Fall back to the original image shipped with the site
-  return new Response(null, { status: 302, headers: { location: "/assets/img/" + name, "cache-control": "public, max-age=60" } });
+  return new Response(null, { status: 302, headers: { location: "/assets/img/" + name, "cache-control": "public, max-age=300", "netlify-cdn-cache-control": "public, s-maxage=300, stale-while-revalidate=86400" } });
 }
 
 export default async (req) => {

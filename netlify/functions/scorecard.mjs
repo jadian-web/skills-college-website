@@ -2,6 +2,7 @@
 //   POST /api/scorecard   (JSON)  -> { ok: true, ref }
 // The same result is also sent through Netlify Forms (form "scorecard"), which emails sales@skillscollege.co.za.
 import { scorecardStore } from "./lib/stores.mjs";
+import { rateLimit } from "./lib/auth.mjs";
 
 const out = (data, status = 200) => new Response(JSON.stringify(data), {
   status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" },
@@ -15,7 +16,10 @@ export default async (req) => {
     const raw = await req.text();
     if (raw.length > 20000) return out({ error: "Too large" }, 413);
     let d; try { d = JSON.parse(raw); } catch { return out({ error: "Bad request" }, 400); }
-    if (d.botField) return out({ ok: true }); // honeypot
+    // spam protection: hidden honeypot field, minimum time on the form, and max 8 results per hour per address
+    if (d.botField || (typeof d.elapsed === "number" && d.elapsed < 4000)) return out({ ok: true, ref: "SC-RECEIVED" });
+    const ip = req.headers.get("x-nf-client-connection-ip") || req.headers.get("x-forwarded-for") || "unknown";
+    if (!(await rateLimit("scorecard", ip, 8, 60))) return out({ error: "Too many submissions from this connection. Please try again in an hour or email sales@skillscollege.co.za." }, 429);
     if (!t(d.company) || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(t(d.email)) || d.consent !== true) return out({ error: "Company, a valid email and consent are required." }, 400);
     const ref = "SC-" + new Date().toISOString().slice(2, 10).replace(/-/g, "") + "-" + Math.random().toString(36).slice(2, 7).toUpperCase();
     const rec = {
