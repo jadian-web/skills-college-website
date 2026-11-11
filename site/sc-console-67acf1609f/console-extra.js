@@ -8,7 +8,7 @@
 
   document.addEventListener("sc:ready", function () {
     P = window.SCPortal; esc = P.esc; api = P.api; toast = P.toast;
-    loadEvents(); loadScorecards(); loadTeam(); loadGroups();
+    loadEvents(); loadScorecards(); loadTeam(); loadGroups(); loadContentPages();
   });
 
   /* ================= EVENTS ================= */
@@ -318,4 +318,92 @@
     }).catch(function (er) { err.textContent = er.message; err.hidden = false; })
       .finally(function () { btn.disabled = false; btn.textContent = "Change password"; });
   });
+  /* ================= WEBSITE TEXT ================= */
+  var ct = { pages: [], page: null, dirty: {}, seoDirty: false };
+  var strip = function (h) { var d = document.createElement("div"); d.innerHTML = h; return d.textContent; };
+  function ctDirtyCount() { return Object.keys(ct.dirty).length + (ct.seoDirty ? 1 : 0); }
+  function ctUpdateBar() {
+    var n = ctDirtyCount();
+    $("#ct-dirty").textContent = n ? n + " unsaved change" + (n === 1 ? "" : "s") : "No unsaved changes";
+    $("#ct-savebar").classList.toggle("has-changes", !!n);
+    $("#ct-save").disabled = !n; $("#ct-discard").disabled = !n;
+  }
+  function loadContentPages(keep) {
+    return api("content/pages").then(function (d) {
+      ct.pages = d.pages;
+      var sel = $("#ct-page"), current = keep || sel.value || "/";
+      sel.innerHTML = d.pages.map(function (p) { return '<option value="' + esc(p.path) + '">' + esc(p.name) + (p.edited ? " (" + p.edited + " edited)" : "") + "</option>"; }).join("");
+      sel.value = current;
+      if (!keep) loadContentPage(sel.value);
+    }).catch(function (e) { if (e.message !== "signed out") toast(e.message, true); });
+  }
+  function count(el, out, max) { out.textContent = el.value.length + " / " + max + " characters"; out.style.color = el.value.length > max ? "#c4163b" : ""; }
+  function loadContentPage(path) {
+    $("#ct-fields").innerHTML = '<p class="muted">Loading&hellip;</p>';
+    return api("content/page?path=" + encodeURIComponent(path)).then(function (d) {
+      ct.page = d; ct.dirty = {}; ct.seoDirty = false;
+      $("#ct-view").href = path;
+      $("#ct-title").value = d.titleOverride || d.title; $("#ct-desc").value = d.descOverride || d.desc;
+      $("#ct-title-orig").textContent = d.titleOverride ? "Original: " + d.title : "";
+      $("#ct-desc-orig").textContent = d.descOverride ? "Original: " + d.desc : "";
+      count($("#ct-title"), $("#ct-title-count"), 60); count($("#ct-desc"), $("#ct-desc-count"), 160);
+      renderFields(); ctUpdateBar();
+    }).catch(function (e) { if (e.message !== "signed out") toast(e.message, true); });
+  }
+  function renderFields() {
+    var d = ct.page, q = $("#ct-search").value.trim().toLowerCase(), onlyEdited = $("#ct-edited-only").checked;
+    var groups = [], cur = null;
+    d.fields.forEach(function (f, i) {
+      var val = f.value !== null ? f.value : f.html;
+      if (q && strip(val).toLowerCase().indexOf(q) < 0 && strip(f.html).toLowerCase().indexOf(q) < 0) return;
+      if (onlyEdited && f.value === null && !(f.k in ct.dirty)) return;
+      if (!cur || cur.name !== f.section) { cur = { name: f.section, items: [] }; groups.push(cur); }
+      cur.items.push([f, i]);
+    });
+    $("#ct-fields").innerHTML = groups.length ? groups.map(function (g) {
+      return '<div class="ct-group"><h3>' + esc(g.name) + "</h3>" + g.items.map(function (x) {
+        var f = x[0], i = x[1], val = f.k in ct.dirty ? (ct.dirty[f.k] === null ? f.html : ct.dirty[f.k]) : (f.value !== null ? f.value : f.html);
+        var edited = f.value !== null, rows = Math.min(8, Math.max(1, Math.ceil(strip(val).length / 90)));
+        return '<div class="ct-field' + (edited ? " edited" : "") + (f.k in ct.dirty ? " dirty" : "") + '" data-i="' + i + '"><div class="meta"><span class="kind">' + esc(f.label) + "</span>" +
+          (edited ? '<span class="flag">Edited</span>' : "") + (edited || f.k in ct.dirty ? '<button type="button" class="link-btn reset" data-ct-reset="' + i + '">Reset to original</button>' : "") + "</div>" +
+          '<textarea rows="' + rows + '" data-ct-i="' + i + '" aria-label="' + esc(f.label + " in " + g.name) + '">' + esc(val) + "</textarea>" +
+          (edited ? '<p class="orig">Original: ' + esc(strip(f.html)) + "</p>" : "") + "</div>";
+      }).join("") + "</div>";
+    }).join("") : '<p class="muted">No text matches.</p>';
+  }
+  $("#ct-page").addEventListener("change", function () {
+    if (ctDirtyCount() && !confirm("You have unsaved changes on this page. Discard them?")) { this.value = ct.page.path; return; }
+    loadContentPage(this.value);
+  });
+  $("#ct-search").addEventListener("input", renderFields);
+  $("#ct-edited-only").addEventListener("change", renderFields);
+  $("#ct-fields").addEventListener("input", function (e) {
+    var t = e.target.closest("[data-ct-i]"); if (!t) return;
+    var f = ct.page.fields[+t.getAttribute("data-ct-i")], orig = f.value !== null ? f.value : f.html;
+    if (t.value === orig) delete ct.dirty[f.k]; else ct.dirty[f.k] = t.value;
+    t.closest(".ct-field").classList.toggle("dirty", f.k in ct.dirty);
+    ctUpdateBar();
+  });
+  $("#ct-fields").addEventListener("click", function (e) {
+    var r = e.target.closest("[data-ct-reset]"); if (!r) return;
+    var f = ct.page.fields[+r.getAttribute("data-ct-reset")];
+    if (f.value !== null) ct.dirty[f.k] = null; else delete ct.dirty[f.k];
+    renderFields(); ctUpdateBar();
+  });
+  ["#ct-title", "#ct-desc"].forEach(function (sel) {
+    $(sel).addEventListener("input", function () {
+      ct.seoDirty = true; count($("#ct-title"), $("#ct-title-count"), 60); count($("#ct-desc"), $("#ct-desc-count"), 160); ctUpdateBar();
+    });
+  });
+  $("#ct-discard").addEventListener("click", function () { if (confirm("Discard your unsaved changes?")) loadContentPage(ct.page.path); });
+  $("#ct-save").addEventListener("click", function () {
+    var btn = this; btn.disabled = true; btn.textContent = "Saving...";
+    var body = { path: ct.page.path, fields: ct.dirty };
+    if (ct.seoDirty) { body.title = $("#ct-title").value.trim(); body.description = $("#ct-desc").value.trim(); }
+    api("content/page", { method: "POST", json: body }).then(function () {
+      toast("Saved. The live page updates within about a minute.");
+      loadContentPages(ct.page.path); return loadContentPage(ct.page.path);
+    }).catch(function (er) { toast(er.message, true); }).finally(function () { btn.textContent = "Save changes"; ctUpdateBar(); });
+  });
+  window.addEventListener("beforeunload", function (e) { if (ctDirtyCount()) { e.preventDefault(); e.returnValue = ""; } });
 })();

@@ -3,11 +3,13 @@
 // State-changing requests also require the X-SC-Admin header (blocks cross-site form posts).
 import { sanitize } from "./lib/sanitize.mjs";
 import manifest from "./lib/media-manifest.mjs";
+import contentManifest from "./lib/content-manifest.mjs";
+import { sanitizeInline } from "./lib/sanitize.mjs";
 import {
   verifyPassword, createSessionCookie, clearSessionCookie, readSession,
   isLocked, recordFail, clearFails, json, pause, credentialStatus, passwordProblems, changePassword,
 } from "./lib/auth.mjs";
-import { mediaStore, postsStore, stateStore, eventsStore, scorecardStore, teamStore, groupStore, IMAGE_TYPES, MAX_BYTES, sniffImage, slugify } from "./lib/stores.mjs";
+import { mediaStore, postsStore, stateStore, eventsStore, scorecardStore, teamStore, groupStore, contentStore, IMAGE_TYPES, MAX_BYTES, sniffImage, slugify } from "./lib/stores.mjs";
 
 const CATEGORIES = ["QCTO", "B-BBEE Skills Development", "Learnerships & Internships", "Bursaries", "Funding & Grants",
   "Workplace Learning", "Compliance Updates", "Learner Guidance", "Company News"];
@@ -223,6 +225,54 @@ async function handle(req, context) {
   if (route.startsWith("events/") && method === "DELETE") {
     await eventsStore().delete(slugify(route.slice(7)));
     return json({ ok: true });
+  }
+
+  // ---------------- website text (Content tab) ----------------
+  if (route === "content/pages" && method === "GET") {
+    const all = (await contentStore().get("pages", { type: "json" })) || {};
+    return json({ pages: contentManifest.map((p) => {
+      const o = all[p.path] || {};
+      const edited = Object.keys(o.fields || {}).filter((k) => p.fields.some((f) => f.k === k)).length + (o.title ? 1 : 0) + (o.description ? 1 : 0);
+      return { path: p.path, name: p.name, fields: p.fields.length, edited, updatedAt: o.updatedAt || null };
+    }) });
+  }
+
+  if (route === "content/page" && method === "GET") {
+    const path = url.searchParams.get("path") || "";
+    const page = contentManifest.find((p) => p.path === path);
+    if (!page) return json({ error: "Unknown page." }, 404);
+    const o = ((await contentStore().get("pages", { type: "json" })) || {})[path] || {};
+    const known = new Set(page.fields.map((f) => f.k));
+    return json({
+      path, name: page.name, title: page.title, desc: page.desc, titleOverride: o.title || "", descOverride: o.description || "",
+      updatedAt: o.updatedAt || null,
+      fields: page.fields.map((f) => ({ ...f, value: o.fields && Object.prototype.hasOwnProperty.call(o.fields, f.k) ? o.fields[f.k] : null })),
+      orphans: Object.keys(o.fields || {}).filter((k) => !known.has(k)).map((k) => ({ k, value: o.fields[k] })),
+    });
+  }
+
+  if (route === "content/page" && method === "POST") {
+    const b = await req.json().catch(() => null);
+    const page = b && contentManifest.find((p) => p.path === b.path);
+    if (!page) return json({ error: "Unknown page." }, 400);
+    const store = contentStore();
+    const all = (await store.get("pages", { type: "json" })) || {};
+    const o = all[page.path] || { fields: {} };
+    o.fields = o.fields || {};
+    const byKey = new Map(page.fields.map((f) => [f.k, f]));
+    for (const [k, v] of Object.entries(b.fields && typeof b.fields === "object" ? b.fields : {})) {
+      if (!byKey.has(k) && !(k in o.fields)) continue;
+      if (v === null) { delete o.fields[k]; continue; }
+      const clean = sanitizeInline(v);
+      if (!clean.replace(/<[^>]+>/g, "").trim()) return json({ error: "Text cannot be empty. Use Reset to go back to the original." }, 400);
+      if (byKey.has(k) && clean === byKey.get(k).html) delete o.fields[k]; else o.fields[k] = clean;
+    }
+    if ("title" in b) { const t = text(b.title, 120); if (t && t !== page.title) o.title = t; else delete o.title; }
+    if ("description" in b) { const d = text(b.description, 300); if (d && d !== page.desc) o.description = d; else delete o.description; }
+    o.updatedAt = new Date().toISOString();
+    if (!Object.keys(o.fields).length && !o.title && !o.description) delete all[page.path]; else all[page.path] = o;
+    await store.setJSON("pages", all);
+    return json({ ok: true, edited: Object.keys(o.fields).length + (o.title ? 1 : 0) + (o.description ? 1 : 0) });
   }
 
   // ---------------- team group photos ----------------

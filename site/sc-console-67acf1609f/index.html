@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow, noarchive">
 <meta name="referrer" content="no-referrer">
 <title>Skills College</title>
-<link rel="icon" type="image/png" href="/assets/img/favicon.png">
+<link rel="icon" type="image/png" href="/assets/img/favicon-32.png">
 <link rel="stylesheet" href="console.css">
 </head>
 <body>
@@ -16,7 +16,7 @@
   <form class="login-card" id="login-form" autocomplete="on">
     <img src="/assets/img/skills-college-logo.webp" alt="Skills College" width="190">
     <h1>Management portal</h1>
-    <p class="muted">Sign in to manage website images, blog posts, events, team profiles and scorecard results.</p>
+    <p class="muted">Sign in to manage website text, images, blog posts, events, team profiles and scorecard results.</p>
     <label for="u">Username</label>
     <input id="u" name="username" autocomplete="username" required>
     <label for="p">Password</label>
@@ -32,6 +32,7 @@
     <img src="/assets/img/skills-college-logo-white.png" alt="Skills College" width="130">
     <nav class="tabs" role="tablist">
       <button role="tab" id="tab-images" aria-selected="true" data-tab="images">Images</button>
+      <button role="tab" id="tab-content" aria-selected="false" data-tab="content">Website text</button>
       <button role="tab" id="tab-posts" aria-selected="false" data-tab="posts">Blog posts</button>
       <button role="tab" id="tab-events" aria-selected="false" data-tab="events">Events</button>
       <button role="tab" id="tab-team" aria-selected="false" data-tab="team">Team</button>
@@ -61,6 +62,39 @@
       <div class="lib-grid" id="library"></div>
     </section>
 
+
+    <!-- WEBSITE TEXT -->
+    <section id="panel-content" data-panel="content" hidden>
+      <div class="panel-head">
+        <div><h1>Website text</h1><p class="muted">Change the words on any page. Saved changes appear on the live website within about a minute. Pictures are changed in the Images tab.</p></div>
+        <a class="btn ghost" id="ct-view" target="_blank" rel="noopener" href="/">View page</a>
+      </div>
+      <div class="ct-toolbar">
+        <label for="ct-page">Page</label>
+        <select id="ct-page"></select>
+        <input type="search" id="ct-search" placeholder="Find text on this page" aria-label="Find text on this page">
+        <label class="check-row ct-only"><input type="checkbox" id="ct-edited-only"> <span>Show edited only</span></label>
+      </div>
+      <details class="ct-help"><summary>Formatting tips</summary>
+        <p>Type normally. For simple formatting you can use: <code>&lt;strong&gt;bold&lt;/strong&gt;</code>, <code>&lt;em&gt;italic&lt;/em&gt;</code>, <code>&lt;br&gt;</code> for a new line, and <code>&lt;a href="/contact/"&gt;a link&lt;/a&gt;</code>.
+        Words inside <code>&lt;span class="accent"&gt;...&lt;/span&gt;</code> show in blue (used in main headings); keep those tags if you want to keep the blue words.</p>
+      </details>
+      <div class="side-card ct-seo">
+        <h2>Search and sharing</h2>
+        <label for="ct-title">Page title <span class="hint" id="ct-title-count"></span></label>
+        <input id="ct-title" maxlength="120">
+        <p class="hint" id="ct-title-orig"></p>
+        <label for="ct-desc">Description <span class="hint" id="ct-desc-count"></span></label>
+        <textarea id="ct-desc" rows="2" maxlength="300"></textarea>
+        <p class="hint" id="ct-desc-orig"></p>
+      </div>
+      <div id="ct-fields"><p class="muted">Loading&hellip;</p></div>
+      <div class="ct-savebar" id="ct-savebar">
+        <span id="ct-dirty">No unsaved changes</span>
+        <button type="button" class="btn ghost" id="ct-discard" disabled>Discard</button>
+        <button type="button" class="btn primary" id="ct-save" disabled>Save changes</button>
+      </div>
+    </section>
     <!-- POSTS -->
     <section id="panel-posts" data-panel="posts" hidden>
       <div id="post-list-view">

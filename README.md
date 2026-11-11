@@ -52,10 +52,21 @@ prefer as the primary domain so the other redirects to it.
 - `/social-preview/` (not linked or indexed) shows how every page looks when shared.
 - The social preview image can be replaced in the portal (Images > "Social media preview image").
 
+## Editing website text (portal > Website text)
+- Pick a page, change any heading, paragraph, list item, button label or number, and press **Save changes**.
+  The live page updates within about a minute. **Reset to original** undoes a single change.
+- Page titles and descriptions for Google and social media can be edited at the top of each page.
+- How it works: every editable piece of text has a `data-c` key. Your edits are stored in Netlify Blobs and
+  applied as each page is served by the edge function `netlify/edge-functions/site-content.js`.
+  If that ever fails, the original page is shown, so the site never breaks.
+- If the website is rebuilt with new wording for a piece of text, an edit you made to the old wording is
+  kept in storage but no longer shown, so check the page in the portal after a redesign.
+
 ## Where things live
 - `site/` - the public website (HTML, CSS, JS, original images, favicon, robots.txt, web manifest)
 - `site/sc-console-67acf1609f/` - the portal page
-- `netlify/functions/` - portal API, image server and blog API
+- `netlify/functions/` - portal API, image server, blog, events, team and scorecard APIs, sitemap
+- `netlify/edge-functions/` - applies edited website text to pages
 - Images on pages load from `/media/<file>`: the portal's replacement if one
   exists, otherwise the original in `site/assets/img/`.
 - Blog posts appear on `/resources/` and open at `/resources/article/?slug=...`.

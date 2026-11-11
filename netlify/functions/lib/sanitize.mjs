@@ -83,3 +83,49 @@ export function sanitize(html) {
   while (stack.length) out.push(`</${stack.pop()}>`);
   return out.join("");
 }
+
+// ---- Inline text from the portal's Website text tab: only <strong> <b> <em> <i> <u> <br> <a href> and <span class="accent">
+const INLINE_ALLOWED = new Set(["strong", "b", "em", "i", "u", "br", "a", "span"]);
+
+
+
+function inlineHref(v) {
+  const clean = String(v || "").trim().replace(/[\u0000-\u001f\u007f]/g, "");
+  if (/^(https?:|mailto:|tel:)/i.test(clean)) return clean;
+  if (/^\/(?!\/)/.test(clean) || /^#/.test(clean)) return clean;
+  return null;
+}
+
+export function sanitizeInline(input) {
+  const html = String(input ?? "").replace(/<!--[\s\S]*?-->/g, "").replace(/<(script|style|iframe|object|svg|template)[\s\S]*?<\/\1\s*>/gi, "").slice(0, 5000);
+  const tagRe = /<(\/?)([a-zA-Z][a-zA-Z0-9]*)((?:[^>"']|"[^"]*"|'[^']*')*)>/g;
+  let out = "", last = 0, m;
+  const open = [];
+  while ((m = tagRe.exec(html))) {
+    out += escText(html.slice(last, m.index));
+    last = tagRe.lastIndex;
+    const closing = !!m[1], tag = m[2].toLowerCase(), attrs = m[3] || "";
+    if (!INLINE_ALLOWED.has(tag)) continue;
+    if (tag === "br") { out += "<br>"; continue; }
+    if (closing) {
+      const i = open.lastIndexOf(tag);
+      if (i >= 0) { while (open.length > i) out += "</" + open.pop() + ">"; }
+      continue;
+    }
+    if (tag === "a") {
+      const hm = /href\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i.exec(attrs);
+      const href = inlineHref(hm ? (hm[1] ?? hm[2] ?? hm[3]) : "");
+      if (!href) continue;
+      const ext = /^https?:/i.test(href);
+      out += `<a href="${escAttr(href)}"${ext ? ' target="_blank" rel="noopener"' : ""}>`; open.push("a"); continue;
+    }
+    if (tag === "span") {
+      if (!/class\s*=\s*["']?accent["']?/i.test(attrs)) continue;
+      out += '<span class="accent">'; open.push("span"); continue;
+    }
+    out += `<${tag}>`; open.push(tag);
+  }
+  out += escText(html.slice(last));
+  while (open.length) out += "</" + open.pop() + ">";
+  return out.trim();
+}

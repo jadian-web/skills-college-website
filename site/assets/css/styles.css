@@ -641,14 +641,14 @@ textarea { min-height: 150px; resize: vertical; }
 .calc fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 .calc legend { font-size: 1.45rem; font-weight: 700; color: var(--navy); padding: 0; margin-bottom: 6px; }
 .step-intro { color: var(--muted); margin: 0 0 22px; max-width: 75ch; }
-.calc-steps { list-style: none; margin: 0 0 30px; padding: 0; display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; counter-reset: s; }
+.calc-steps { list-style: none; margin: 0 0 30px; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; counter-reset: s; }
 .calc-steps li { font-size: .8rem; font-weight: 600; color: var(--muted); border-top: 4px solid var(--line); padding-top: 8px; display: flex; gap: 8px; align-items: center; }
 .calc-steps li span { width: 24px; height: 24px; border-radius: 50%; background: var(--mist); color: var(--navy); display: grid; place-items: center; font-size: .75rem; flex-shrink: 0; }
 .calc-steps li.done { border-color: var(--teal); cursor: pointer; }
 .calc-steps li.done span { background: var(--teal); }
 .calc-steps li[aria-current] { border-color: var(--orange); color: var(--navy); }
 .calc-steps li[aria-current] span { background: var(--orange); }
-.calc-steps.auto li:nth-child(n+2):nth-child(-n+5) { opacity: .35; }
+.calc-steps.auto li:nth-child(2) { opacity: .35; }
 .fields.three { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .num { position: relative; }
 .num .pre { position: absolute; left: 1px; top: 1px; bottom: 1px; width: 38px; display: grid; place-items: center; color: var(--muted); font-weight: 600; background: var(--mist); border-radius: 6px 0 0 6px; border-right: 1px solid #c9dbe7; }
@@ -712,9 +712,7 @@ button.btn { font-family: var(--font); }
 .accordion details > div > p { color: var(--muted); margin: 0; }
 .sources summary { cursor: pointer; font-weight: 700; color: var(--navy); }
 @media (max-width: 760px) {
-  .calc-steps { grid-template-columns: repeat(6, 1fr); }
-  .calc-steps li { font-size: 0; gap: 0; justify-content: center; }
-  .calc-steps li span { font-size: .75rem; }
+  .calc-steps li { font-size: .72rem; gap: 6px; }
   .fields.three { grid-template-columns: 1fr; }
   .result-head { grid-template-columns: 1fr; }
 }
@@ -900,3 +898,7 @@ button.btn { font-family: var(--font); }
 .prose a, .consent a, .legal-section a, .legal-intro a, .article-content a, .step-intro a, .faq-card a, p > a:not(.btn):not(.text-link):not(.back-link) { text-decoration: underline; text-underline-offset: 2px; }
 .text-link.on-dark { color: #fff; align-self: center; }
 .legal-body, .legal-toc { min-width: 0; }
+
+.sd-meter { position: relative; height: 10px; border-radius: 6px; background: var(--mist); margin-top: 14px; max-width: 420px; }
+.sd-meter span { display: block; height: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--blue), var(--teal)); }
+.sd-meter i { position: absolute; top: -4px; width: 2px; height: 18px; background: var(--orange); }
