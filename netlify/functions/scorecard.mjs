@@ -1,6 +1,8 @@
 // Public endpoint: stores a B-BBEE scorecard calculator result so the team can see it in the portal.
 //   POST /api/scorecard   (JSON)  -> { ok: true, ref }
 // The same result is also sent through Netlify Forms (form "scorecard"), which emails sales@skillscollege.co.za.
+// Both carry the same reference number: the portal record is the working copy (status new/contacted/closed); the
+// Netlify Forms entry is only the email notification. Do not import Netlify Forms entries into the portal, or results will be counted twice.
 import { scorecardStore } from "./lib/stores.mjs";
 import { rateLimit } from "./lib/auth.mjs";
 
@@ -10,7 +12,7 @@ const out = (data, status = 200) => new Response(JSON.stringify(data), {
 const t = (v, max = 200) => String(v ?? "").replace(/[<>]/g, "").trim().slice(0, max);
 const n = (v) => { if (v === null || v === undefined || v === "") return null; const x = Number(v); return Number.isFinite(x) ? Math.round(x * 100) / 100 : null; };
 
-export default async (req) => {
+export default async (req, context) => {
   if (req.method !== "POST") return out({ error: "Method not allowed" }, 405);
   try {
     const raw = await req.text();
@@ -18,18 +20,22 @@ export default async (req) => {
     let d; try { d = JSON.parse(raw); } catch { return out({ error: "Bad request" }, 400); }
     // spam protection: hidden honeypot field, minimum time on the form, and max 8 results per hour per address
     if (d.botField || (typeof d.elapsed === "number" && d.elapsed < 4000)) return out({ ok: true, ref: "SC-RECEIVED" });
-    const ip = req.headers.get("x-nf-client-connection-ip") || req.headers.get("x-forwarded-for") || "unknown";
+    const ip = context?.ip || req.headers.get("x-nf-client-connection-ip") || "unknown";
     if (!(await rateLimit("scorecard", ip, 8, 60))) return out({ error: "Too many submissions from this connection. Please try again in an hour or email sales@skillscollege.co.za." }, 429);
     if (!t(d.company) || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(t(d.email)) || d.consent !== true) return out({ error: "Company, a valid email and consent are required." }, 400);
+    // server-side sanity checks mirror the calculator's validation, so a hand-crafted request cannot store impossible figures
+    const inp = d.inputs && typeof d.inputs === "object" ? d.inputs : {};
+    const pct = (k) => (typeof inp[k] === "number" ? inp[k] : 0);
+    if (pct("own_black") > 100 || pct("own_bw") > pct("own_black") || pct("sd_absorbed") > pct("sd_completed")) return out({ error: "Some figures do not add up. Please check them and try again." }, 400);
     const ref = "SC-" + new Date().toISOString().slice(2, 10).replace(/-/g, "") + "-" + Math.random().toString(36).slice(2, 7).toUpperCase();
     const rec = {
       ref, createdAt: new Date().toISOString(),
       company: t(d.company), contact: t(d.contact), email: t(d.email), phone: t(d.phone, 40), role: t(d.role),
       sector: t(d.sector), seta: t(d.seta), turnover: n(d.turnover), category: t(d.category, 40), scorecard: t(d.scorecard, 60),
-      level: t(d.level, 40), recognition: t(d.recognition, 20), points: n(d.points), discounted: !!d.discounted,
+      level: t(d.level, 80), recognition: t(d.recognition, 20), points: n(d.points), discounted: !!d.discounted,
       elements: (Array.isArray(d.elements) ? d.elements : []).slice(0, 8).map((e) => ({ name: t(e.name, 80), points: n(e.points), max: n(e.max), bonus: n(e.bonus), subMin: t(e.subMin, 20) })),
       notes: (Array.isArray(d.notes) ? d.notes : []).slice(0, 12).map((x) => t(x, 300)),
-      inputs: Object.fromEntries(Object.entries(d.inputs && typeof d.inputs === "object" ? d.inputs : {}).slice(0, 80).map(([k, v]) => [t(k, 40), typeof v === "number" ? v : t(v, 120)])),
+      inputs: Object.fromEntries(Object.entries(d.inputs && typeof d.inputs === "object" ? d.inputs : {}).slice(0, 80).map(([k, v]) => [t(k, 40), typeof v === "number" && Number.isFinite(v) && v >= 0 && v < 1e13 ? v : null])),
       status: "new",
     };
     await scorecardStore().setJSON(rec.createdAt.replace(/[:.]/g, "-") + "-" + ref, rec);

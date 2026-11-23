@@ -84,3 +84,33 @@ prefer as the primary domain so the other redirects to it.
 3. Event: "New form submission", Form: `scorecard`,
    Email: sales@skillscollege.co.za. Save.
 Every calculator result then arrives by email, and is also listed in the portal.
+
+## Portal lists added in the November 2026 audit update
+- **Opportunities** tab: learnerships, internships, bursaries and skills programmes shown on
+  `/learners/opportunities/` (each opens at `?id=...`). Closed opportunities stay visible, marked closed,
+  for 30 days after the closing date and are then hidden automatically.
+- **Qualifications** tab: the searchable directory on `/qcto/qualifications/` (search, NQF level, type,
+  availability). Only list qualifications within the current accreditation scope.
+- **Documents** tab: upload PDFs (max 4.5 MB, checked to be a real PDF). Category "PAIA manual" shows on
+  `/paia-manual/`; all other categories show on `/about/accreditations-quality/`. Files download rather than
+  open in the browser. Deleting a document deletes its file.
+- **Testimonials** tab: client quotes shown at the bottom of the home page. The section stays hidden until one is
+  published, and a testimonial can only be saved once you confirm the client approved it.
+- **Partners** tab: partner logos (chosen from the image library) shown in a moving carousel after Our values on
+  the home page. Hidden until a partner is published; with fewer than four logos they show as a still row.
+- Case studies: publish a blog post with the category **Case Studies & Impact**. The About menu link
+  appears automatically once one is published.
+- Article, event and opportunity pages get their own title, description and link preview from the
+  edge function when the page first loads.
+- Any address other than skillscollege.co.za / www.skillscollege.co.za (staging, deploy previews,
+  *.netlify.app) is sent with `X-Robots-Tag: noindex, nofollow`, so staging is never indexed.
+
+## Uploading to GitHub in the browser (100 files per upload)
+The project has just over 100 files, so upload it in two drags:
+1. Everything **except** the `site/assets` folder.
+2. The `site/assets` folder (drag it into the `site` folder in GitHub).
+Do not upload `node_modules`.
+
+## Removed files (delete these from the repository if they are still there)
+`site/assets/data/stories.json`, `site/assets/data/articles.json`, `site/assets/data/qualifications.json`,
+`site/favicon.png`. Case studies, articles and qualifications are now managed in the portal.

@@ -19,7 +19,7 @@ const escText = (s) => String(s).replace(/&(?![a-z]+;|#\d+;|#x[0-9a-f]+;)/gi, "&
 function safeHref(v) {
   const clean = decodeEntities(v).replace(/[\u0000- \u007f-\u009f]/g, "");
   if (/^(https?:|mailto:|tel:)/i.test(clean)) return clean;
-  if (/^\/(?!\/)/.test(clean) || /^#/.test(clean)) return clean;
+  if (/^\/(?![\/\\])/.test(clean) || /^#/.test(clean)) return clean;
   return null;
 }
 function safeImg(v) {
@@ -92,7 +92,7 @@ const INLINE_ALLOWED = new Set(["strong", "b", "em", "i", "u", "br", "a", "span"
 function inlineHref(v) {
   const clean = String(v || "").trim().replace(/[\u0000-\u001f\u007f]/g, "");
   if (/^(https?:|mailto:|tel:)/i.test(clean)) return clean;
-  if (/^\/(?!\/)/.test(clean) || /^#/.test(clean)) return clean;
+  if (/^\/(?![\/\\])/.test(clean) || /^#/.test(clean)) return clean;
   return null;
 }
 

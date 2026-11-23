@@ -25,7 +25,7 @@ async function handle(req) {
 
 export default async (req) => {
   try { return await handle(req); }
-  catch (e) { console.error(e); return out({ error: "Server error: " + ((e && e.message) || e) }, 500); }
+  catch (e) { console.error(e); return out({ error: "Server error" }, 500); }
 };
 
 export const config = { path: ["/api/events", "/api/events/*"] };

@@ -26,40 +26,40 @@ export default [
  },
  {
   "name": "classroom.jpg",
-  "alt": "Learners in a Skills College classroom",
+  "alt": "Learners taking part in skills training",
   "pages": [
-   "/",
-   "/for-employers/higher-education-bursaries/ignite-bursaries/",
-   "/for-employers/disability-skills-development/",
-   "/for-employers/accredited-training/",
-   "/about/",
    "/about/accreditations-quality/",
+   "/about/",
+   "/for-employers/accredited-training/",
+   "/for-employers/disability-skills-development/",
+   "/for-employers/higher-education-bursaries/ignite-bursaries/",
+   "/",
    "/resources/"
   ],
   "label": "Classroom"
  },
  {
   "name": "employer-consultation.jpg",
-  "alt": "Employer consultation in progress",
+  "alt": "Skills development and workplace learning representatives in discussion",
   "pages": [
+   "/about/",
+   "/b-bbee-scorecard-calculator/",
+   "/contact/",
    "/for-employers/",
    "/for-employers/skills-development-strategy/",
-   "/qcto/seta-to-qcto/",
    "/qcto/employer-support/",
-   "/about/",
-   "/contact/",
-   "/b-bbee-scorecard-calculator/"
+   "/qcto/seta-to-qcto/"
   ],
   "label": "Employer consultation"
  },
  {
   "name": "hero-learner-campus.jpg",
-  "alt": "Smiling learner on a college campus",
+  "alt": "Tertiary student on campus",
   "pages": [
-   "/",
-   "/for-employers/",
+   "/for-employers/higher-education-bursaries/ignite-bursaries/",
    "/for-employers/higher-education-bursaries/",
-   "/for-employers/higher-education-bursaries/ignite-bursaries/"
+   "/for-employers/",
+   "/"
   ],
   "label": "Learner on campus"
  },
@@ -81,7 +81,7 @@ export default [
  },
  {
   "name": "hero-slide-3.jpg",
-  "alt": "Skills Development consultation with an employer",
+  "alt": "Skills development consultation with an employer",
   "pages": [
    "/"
   ],
@@ -116,7 +116,7 @@ export default [
  },
  {
   "name": "path-employers.jpg",
-  "alt": "Employer in a Skills Development planning conversation",
+  "alt": "Employer in a skills development planning conversation",
   "pages": [
    "/"
   ],
@@ -126,7 +126,8 @@ export default [
   "name": "path-learners.jpg",
   "alt": "Smiling learner on campus",
   "pages": [
-   "/"
+   "/",
+   "/learners/"
   ],
   "label": "Home: learners path card (square)"
  },
@@ -134,11 +135,11 @@ export default [
   "name": "practical-training.jpg",
   "alt": "Learner in practical occupational training",
   "pages": [
-   "/",
    "/for-employers/accredited-training/",
+   "/",
+   "/qcto/assessment-centre/",
    "/qcto/",
-   "/qcto/what-is-qcto/",
-   "/qcto/assessment-centre/"
+   "/qcto/what-is-qcto/"
   ],
   "label": "Practical training"
  },
@@ -146,39 +147,41 @@ export default [
   "name": "skills-college-logo-white.png",
   "alt": "Skills College",
   "pages": [
-   "/",
-   "/for-employers/",
-   "/for-employers/skills-development-strategy/",
-   "/for-employers/learnerships-internships/",
-   "/for-employers/higher-education-bursaries/",
-   "/for-employers/higher-education-bursaries/ignite-bursaries/",
-   "/for-employers/disability-skills-development/",
-   "/for-employers/b-bbee-absorption/",
-   "/for-employers/accredited-training/",
-   "/qcto/",
-   "/qcto/what-is-qcto/",
-   "/qcto/seta-to-qcto/",
-   "/qcto/curriculum/",
-   "/qcto/qualifications/",
-   "/qcto/assessment-centre/",
-   "/qcto/employer-support/",
-   "/about/",
-   "/about/events/",
+   "/404.html",
    "/about/accreditations-quality/",
-   "/case-studies/",
+   "/about/events/",
+   "/about/",
    "/about/team/",
-   "/resources/",
+   "/b-bbee-scorecard-calculator/",
+   "/case-studies/",
    "/contact/",
    "/contact/thank-you/",
-   "/privacy-policy/",
-   "/terms-and-conditions/",
    "/cookie-policy/",
    "/disclaimer/",
+   "/for-employers/accredited-training/",
+   "/for-employers/b-bbee-absorption/",
+   "/for-employers/disability-skills-development/",
+   "/for-employers/higher-education-bursaries/ignite-bursaries/",
+   "/for-employers/higher-education-bursaries/",
+   "/for-employers/",
+   "/for-employers/learnerships-internships/",
+   "/for-employers/skills-development-strategy/",
+   "/",
+   "/learners/",
+   "/learners/opportunities/",
    "/paia-manual/",
+   "/privacy-policy/",
+   "/qcto/assessment-centre/",
+   "/qcto/curriculum/",
+   "/qcto/employer-support/",
+   "/qcto/",
+   "/qcto/qualifications/",
+   "/qcto/seta-to-qcto/",
+   "/qcto/what-is-qcto/",
    "/resources/article/",
-   "/404.html",
-   "/b-bbee-scorecard-calculator/",
-   "/social-preview/"
+   "/resources/",
+   "/social-preview/",
+   "/terms-and-conditions/"
   ],
   "label": "Logo (footer, white)"
  },
@@ -186,39 +189,41 @@ export default [
   "name": "skills-college-logo.webp",
   "alt": "Skills College",
   "pages": [
-   "/",
-   "/for-employers/",
-   "/for-employers/skills-development-strategy/",
-   "/for-employers/learnerships-internships/",
-   "/for-employers/higher-education-bursaries/",
-   "/for-employers/higher-education-bursaries/ignite-bursaries/",
-   "/for-employers/disability-skills-development/",
-   "/for-employers/b-bbee-absorption/",
-   "/for-employers/accredited-training/",
-   "/qcto/",
-   "/qcto/what-is-qcto/",
-   "/qcto/seta-to-qcto/",
-   "/qcto/curriculum/",
-   "/qcto/qualifications/",
-   "/qcto/assessment-centre/",
-   "/qcto/employer-support/",
-   "/about/",
-   "/about/events/",
+   "/404.html",
    "/about/accreditations-quality/",
-   "/case-studies/",
+   "/about/events/",
+   "/about/",
    "/about/team/",
-   "/resources/",
+   "/b-bbee-scorecard-calculator/",
+   "/case-studies/",
    "/contact/",
    "/contact/thank-you/",
-   "/privacy-policy/",
-   "/terms-and-conditions/",
    "/cookie-policy/",
    "/disclaimer/",
+   "/for-employers/accredited-training/",
+   "/for-employers/b-bbee-absorption/",
+   "/for-employers/disability-skills-development/",
+   "/for-employers/higher-education-bursaries/ignite-bursaries/",
+   "/for-employers/higher-education-bursaries/",
+   "/for-employers/",
+   "/for-employers/learnerships-internships/",
+   "/for-employers/skills-development-strategy/",
+   "/",
+   "/learners/",
+   "/learners/opportunities/",
    "/paia-manual/",
+   "/privacy-policy/",
+   "/qcto/assessment-centre/",
+   "/qcto/curriculum/",
+   "/qcto/employer-support/",
+   "/qcto/",
+   "/qcto/qualifications/",
+   "/qcto/seta-to-qcto/",
+   "/qcto/what-is-qcto/",
    "/resources/article/",
-   "/404.html",
-   "/b-bbee-scorecard-calculator/",
-   "/social-preview/"
+   "/resources/",
+   "/social-preview/",
+   "/terms-and-conditions/"
   ],
   "label": "Logo (header)"
  },
@@ -232,11 +237,11 @@ export default [
  },
  {
   "name": "team-discussion.jpg",
-  "alt": "Inclusive workplace discussion",
+  "alt": "Skills College team together",
   "pages": [
-   "/for-employers/disability-skills-development/",
    "/about/events/",
-   "/about/team/"
+   "/about/team/",
+   "/for-employers/disability-skills-development/"
   ],
   "label": "Team discussion"
  },
@@ -250,11 +255,12 @@ export default [
  },
  {
   "name": "workplace-learners.jpg",
-  "alt": "Learners gaining workplace experience",
+  "alt": "Learners in a practical workplace setting",
   "pages": [
-   "/",
+   "/case-studies/",
    "/for-employers/learnerships-internships/",
-   "/case-studies/"
+   "/",
+   "/learners/opportunities/"
   ],
   "label": "Learners in the workplace"
  }

@@ -26,7 +26,7 @@ async function handle(req) {
 
 export default async (req) => {
   try { return await handle(req); }
-  catch (e) { console.error(e); return new Response(JSON.stringify({ error: "Server error: " + ((e && e.message) || e) }), { status: 500, headers: { "content-type": "application/json" } }); }
+  catch (e) { console.error(e); return new Response(JSON.stringify({ error: "Server error. Please try again." }), { status: 500, headers: { "content-type": "application/json" } }); }
 };
 
 export const config = { path: ["/api/posts", "/api/posts/*"] };

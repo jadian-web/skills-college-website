@@ -4,6 +4,7 @@
 import { sanitize } from "./lib/sanitize.mjs";
 import manifest from "./lib/media-manifest.mjs";
 import contentManifest from "./lib/content-manifest.mjs";
+import { COLLECTIONS, OPP_TYPES, QUAL_TYPES, QUAL_AVAIL, DOC_CATS, listCollection, colStore } from "./lib/collections.mjs";
 import { sanitizeInline } from "./lib/sanitize.mjs";
 import {
   verifyPassword, createSessionCookie, clearSessionCookie, readSession,
@@ -12,7 +13,7 @@ import {
 import { mediaStore, postsStore, stateStore, eventsStore, scorecardStore, teamStore, groupStore, contentStore, IMAGE_TYPES, MAX_BYTES, sniffImage, slugify } from "./lib/stores.mjs";
 
 const CATEGORIES = ["QCTO", "B-BBEE Skills Development", "Learnerships & Internships", "Bursaries", "Funding & Grants",
-  "Workplace Learning", "Compliance Updates", "Learner Guidance", "Company News"];
+  "Workplace Learning", "Compliance Updates", "Learner Guidance", "Company News", "Case Studies & Impact"];
 
 const EVENT_TYPES = ["Go-Karting", "Disc Golf", "Team Building", "Learner Graduation", "Community Outreach", "Open Day", "Sports Day", "Year-End Function", "Other"];
 const clean = (html) => sanitize(html);
@@ -98,9 +99,18 @@ async function handle(req, context) {
     try { form = await req.formData(); } catch { return json({ error: "Upload could not be read." }, 400); }
     const file = form.get("file");
     const slot = text(form.get("slot") || "", 120);
-    if (!file || typeof file === "string") return json({ error: "Choose an image to upload." }, 400);
-    if (file.size > MAX_BYTES) return json({ error: "Image is larger than 4.5 MB. Resize it and try again." }, 413);
+    if (!file || typeof file === "string") return json({ error: "Choose a file to upload." }, 400);
+    if (file.size > MAX_BYTES) return json({ error: "File is larger than 4.5 MB. Make it smaller and try again." }, 413);
     const buf = await file.arrayBuffer();
+    if (form.get("kind") === "doc") {
+      // PDF documents (certificates, PAIA manual). Checked by file signature, never by name alone.
+      const head = new Uint8Array(buf.slice(0, 5));
+      if (!(head[0] === 0x25 && head[1] === 0x50 && head[2] === 0x44 && head[3] === 0x46 && head[4] === 0x2d)) return json({ error: "Only PDF files can be uploaded as documents." }, 415);
+      const base = slugify(String(file.name || "document").replace(/\.[a-z0-9]+$/i, "")) || "document";
+      const key = `docs/${Date.now().toString(36)}-${base}.pdf`;
+      await mediaStore().set(key, buf, { metadata: { contentType: "application/pdf", size: buf.byteLength, uploadedAt: new Date().toISOString(), originalName: text(file.name, 120) } });
+      return json({ ok: true, name: key, url: "/media/" + key, size: buf.byteLength });
+    }
     const type = sniffImage(buf);
     if (!type) return json({ error: "Only JPG, PNG, WebP or GIF images are allowed." }, 415);
     const metadata = { contentType: type, size: buf.byteLength, uploadedAt: new Date().toISOString(), originalName: text(file.name, 120) };
@@ -166,7 +176,7 @@ async function handle(req, context) {
       coverAlt: text(p.coverAlt, 200),
       body: clean(p.body),
       takeaways: (Array.isArray(p.takeaways) ? p.takeaways : []).map((t) => text(t, 300)).filter(Boolean).slice(0, 10),
-      related: (Array.isArray(p.related) ? p.related : []).filter((r) => /^\/[a-z0-9\/-]*$/.test(r)).slice(0, 6),
+      related: (Array.isArray(p.related) ? p.related : []).filter((r) => /^\/(?!\/)[a-z0-9\/-]*$/.test(r)).slice(0, 6),
       sources: (Array.isArray(p.sources) ? p.sources : []).map((s) => ({ label: text(s.label, 200), url: /^https?:\/\//.test(s.url || "") ? String(s.url).slice(0, 500) : "" }))
         .filter((s) => s.label && s.url).slice(0, 10),
       audience: ["employers", "learners", "both"].includes(p.audience) ? p.audience : "employers",
@@ -225,6 +235,50 @@ async function handle(req, context) {
   if (route.startsWith("events/") && method === "DELETE") {
     await eventsStore().delete(slugify(route.slice(7)));
     return json({ ok: true });
+  }
+
+  // ---------------- portal-managed lists: opportunities, qualifications, documents ----------------
+  const cm = /^c\/(opportunities|qualifications|documents|testimonials|partners)(?:\/(order|[a-z0-9-]{1,80}))?$/.exec(route);
+  if (cm) {
+    const [, name, sub] = cm;
+    const def = COLLECTIONS[name];
+    if (!sub && method === "GET") {
+      return json({ items: await listCollection(name), options: { OPP_TYPES, QUAL_TYPES, QUAL_AVAIL, DOC_CATS } });
+    }
+    if (!sub && method === "POST") {
+      const p = await req.json().catch(() => null);
+      if (!p || typeof p !== "object") return json({ error: "Bad request." }, 400);
+      const rec = def.clean(p);
+      const problem = def.required(rec);
+      if (problem) return json({ error: problem }, 400);
+      const s = colStore(name);
+      const id = /^[a-z0-9-]{4,80}$/.test(p.id || "") ? p.id : (slugify(rec.title).slice(0, 60) || name) + "-" + Date.now().toString(36);
+      const existing = await s.get(id, { type: "json" });
+      const order = existing ? existing.order : (await s.list()).blobs.length;
+      const saved = { id, ...rec, status: p.status === "published" ? "published" : "draft", order, createdAt: existing?.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString() };
+      await s.setJSON(id, saved);
+      return json({ ok: true, item: saved });
+    }
+    if (sub === "order" && method === "POST") {
+      const { ids } = await req.json().catch(() => ({}));
+      if (!Array.isArray(ids)) return json({ error: "Bad request." }, 400);
+      const s = colStore(name);
+      await Promise.all(ids.slice(0, 500).map(async (id, i) => {
+        if (!/^[a-z0-9-]{1,80}$/.test(id)) return;
+        const r = await s.get(id, { type: "json" }); if (!r) return;
+        r.order = i; await s.setJSON(id, r);
+      }));
+      return json({ ok: true });
+    }
+    if (sub && sub !== "order" && method === "DELETE") {
+      if (name === "documents") {
+        const r = await colStore(name).get(sub, { type: "json" });
+        if (r && /^\/media\/docs\/[a-z0-9._-]+\.pdf$/i.test(r.file || "")) await mediaStore().delete(r.file.slice(7));
+      }
+      await colStore(name).delete(sub);
+      return json({ ok: true });
+    }
+    return json({ error: "Not found." }, 404);
   }
 
   // ---------------- website text (Content tab) ----------------
@@ -411,15 +465,15 @@ export default async (req, context) => {
   const route = new URL(req.url).pathname.replace(/^\/api\/admin\/?/, "").replace(/\/$/, "");
   // Public health check: shows whether the server parts are working (no private data)
   if (route === "health") {
-    const out = { functions: "ok", node: process.version, storage: "unknown" };
-    try { await stateStore().get("health-check"); out.storage = "ok"; } catch (e) { out.storage = "error: " + (e && e.message || e); }
+    const out = { functions: "ok", storage: "unknown" };
+    try { await stateStore().get("health-check"); out.storage = "ok"; } catch (e) { console.error("health storage", e); out.storage = "error"; }
     return json(out);
   }
   try {
     return await handle(req, context);
   } catch (e) {
     console.error("portal error", e);
-    return json({ error: "Server error: " + ((e && e.message) || String(e)).slice(0, 300) }, 500);
+    return json({ error: "Server error. Please try again, or check the Netlify function log." }, 500);
   }
 };
 

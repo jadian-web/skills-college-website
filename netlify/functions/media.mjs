@@ -8,7 +8,7 @@ async function handle(req) {
   if (!name || name.includes("..") || !/^[a-z0-9][a-z0-9._\/-]*$/i.test(name)) return new Response("Not found", { status: 404 });
 
   const store = mediaStore();
-  const isUpload = name.startsWith("uploads/");
+  const isUpload = name.startsWith("uploads/") || name.startsWith("docs/");
 
   if (!isUpload) {
     const state = (await stateStore().get("media-state", { type: "json" })) || { hidden: [] };
@@ -24,6 +24,11 @@ async function handle(req) {
         "cache-control": "public, max-age=300, stale-while-revalidate=86400",
         "netlify-cdn-cache-control": "public, s-maxage=300, stale-while-revalidate=86400",
         "x-content-type-options": "nosniff",
+        // uploaded files can never run scripts or be framed by other sites
+        "content-security-policy": "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; frame-ancestors 'self'; sandbox",
+        "cross-origin-resource-policy": "same-site",
+        // PDFs download instead of opening in the browser tab, so a crafted PDF cannot run in the site's origin
+        ...(name.startsWith("docs/") ? { "content-disposition": `attachment; filename="${name.slice(5).replace(/[^a-z0-9._-]/gi, "")}"` } : {}),
       },
     });
   }
@@ -34,7 +39,7 @@ async function handle(req) {
 
 export default async (req) => {
   try { return await handle(req); }
-  catch (e) { console.error(e); return new Response(JSON.stringify({ error: "Server error: " + ((e && e.message) || e) }), { status: 500, headers: { "content-type": "application/json" } }); }
+  catch (e) { console.error(e); return new Response(JSON.stringify({ error: "Server error. Please try again." }), { status: 500, headers: { "content-type": "application/json" } }); }
 };
 
 export const config = { path: "/media/*" };
