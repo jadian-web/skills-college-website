@@ -22,4 +22,14 @@
 /contact-us/                                 /contact/                                 301
 /blog/                                       /resources/                               301
 /media/photo-gallery/                        /about/                                   301
-/campuses/                                   https://my.skillscollege.co.za            302
+/campuses/                                   /about/#campuses                          301
+/our-campuses/                               /about/#campuses                          301
+/team/                                       /about/team/                              301
+/our-team/                                   /about/team/                              301
+/qcto-assessment-centre/                     /qcto/assessment-centre/                  301
+/learnerships/                               /learners/opportunities/                  301
+/opportunities/                              /learners/opportunities/                  301
+/vacancies/                                  /learners/opportunities/                  301
+/apply/                                      /learners/                                301
+/stories/                                    /case-studies/                            301
+/student-portal/                             https://my.skillscollege.co.za            302

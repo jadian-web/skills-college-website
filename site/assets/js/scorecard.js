@@ -7,13 +7,19 @@
   var startedAt = Date.now();
   var resultBox = document.querySelector("[data-result]");
   var $ = function (id) { return document.getElementById(id); };
-  var num = function (id) {
+  // Strict number parsing: only digits, spaces, thousands separators, one decimal mark and an optional R or %.
+  // Anything else (for example "5000000garbage") is rejected rather than silently read as a number.
+  var parse = function (id) {
     var el = $(id); if (!el) return 0;
-    var raw = String(el.value).replace(/[R%\s]/g, "");
-    raw = /^\d+,\d{1,2}$/.test(raw) ? raw.replace(",", ".") : raw.replace(/,/g, "");
-    var v = parseFloat(raw);
-    return isFinite(v) && v > 0 ? v : 0;
+    var raw = String(el.value).trim();
+    if (raw === "") return 0;
+    raw = raw.replace(/^R\s*/i, "").replace(/\s*%$/, "").replace(/[\s\u00a0]/g, "");
+    if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(raw)) raw = raw.replace(/,/g, "");
+    else if (/^\d+,\d{1,2}$/.test(raw)) raw = raw.replace(",", ".");
+    if (!/^\d+(\.\d+)?$/.test(raw)) return NaN;
+    return parseFloat(raw);
   };
+  var num = function (id) { var v = parse(id); return isFinite(v) && v > 0 ? v : 0; };
   var esc = function (s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
   var money = function (v) { return "R" + Math.round(v).toLocaleString("en-ZA"); };
   var r2 = function (v) { return Math.round(v * 100) / 100; };
@@ -24,9 +30,12 @@
   var THRESHOLDS = {
     generic: [10e6, 50e6], tourism: [5e6, 45e6], construction: [10e6, 50e6], bep: [6e6, 25e6], financial: [10e6, 50e6], ict: [10e6, 50e6]
   };
+  // Automatic levels are only shown where the thresholds and affidavit rules are confirmed in the Generic Codes and Tourism Sector Code.
+  // Every other sector (and "Not sure") gets a specialist review instead of an automatic level, so the tool never gives conflicting levels.
+  var AUTO_SECTORS = { generic: 1, tourism: 1 };
   var SECTOR_NOTES = {
     tourism: "Tourism Sector Code applies: thresholds used are EME up to R5m and QSE up to R45m. Element weightings and targets differ from the Generic Codes; our team will confirm your score on the Tourism scorecard.",
-    construction: "Construction Sector Code applies (contractors). Element targets differ from the Generic Codes; our team will confirm your score on the Construction scorecard.",
+    construction: "Construction Sector Code applies (contractors). Its thresholds, automatic level rules and targets differ from the Generic Codes, so our team will confirm your category and level on the Construction scorecard.",
     bep: "Construction Sector Code applies (built environment professionals): EME up to R6m and QSE up to R25m. Targets differ; our team will confirm.",
     financial: "Financial Sector Code applies. It adds Access to Financial Services and Empowerment Financing elements, so this Generic estimate is a guide only.",
     ict: "ICT Sector Code applies. Weightings and targets differ from the Generic Codes; our team will confirm your score on the ICT scorecard.",
@@ -37,8 +46,8 @@
     transport: "A Transport Sector Code applies. This estimate uses the Generic thresholds and scorecards; our team will confirm.",
     ca: "Chartered Accountancy Sector Code applies. This estimate uses the Generic thresholds and scorecards; our team will confirm.",
     defence: "Defence Sector Code applies. This estimate uses the Generic thresholds and scorecards; our team will confirm.",
-    mining: "Mining companies are measured under the Mining Charter, not the B-BBEE Codes. This estimate shows how you would score on the Generic Codes only.",
-    unsure: "You were not sure about your sector code. Our team will check whether a sector code applies to you."
+    mining: "Mining companies are measured under the Mining Charter, not the B-BBEE Codes, so no automatic level is shown. Your Skills Development figures are scored against the Generic targets as a guide only.",
+    unsure: "You were not sure about your sector code, so no automatic level is shown. Our team will check which code applies to you and confirm your category and level."
   };
   var LEVELS = [[100, "Level 1", "135%"], [95, "Level 2", "125%"], [90, "Level 3", "110%"], [80, "Level 4", "100%"], [75, "Level 5", "80%"], [70, "Level 6", "60%"], [55, "Level 7", "50%"], [40, "Level 8", "10%"], [-1, "Non-compliant", "0%"]];
   var levelIndex = function (pts) { for (var i = 0; i < LEVELS.length; i++) if (pts >= LEVELS[i][0]) return i; return LEVELS.length - 1; };
@@ -50,14 +59,12 @@
     var t = THRESHOLDS[sector] || THRESHOLDS.generic;
     var turnover = num("turnover"), black = Math.min(100, num("own_black"));
     var cat = turnover <= t[0] ? "EME" : turnover <= t[1] ? "QSE" : "Generic";
-    var auto = null;
-    if (cat === "EME") {
-      if (sector === "construction") auto = black >= 100 ? 0 : black >= 51 ? 1 : black >= 30 ? 3 : 4;
-      else auto = black >= 100 ? 0 : black >= 51 ? 1 : 3;
-    } else if (cat === "QSE") {
-      if (black >= 100) auto = 0; else if (black >= 51) auto = 1;
+    var auto = null, confirm = !AUTO_SECTORS[sector];
+    if (!confirm) {
+      if (cat === "EME") auto = black >= 100 ? 0 : black >= 51 ? 1 : 3;
+      else if (cat === "QSE") { if (black >= 100) auto = 0; else if (black >= 51) auto = 1; }
     }
-    return { cat: cat, auto: auto, turnover: turnover, black: black, sector: sector, t: t };
+    return { cat: cat, auto: auto, confirm: confirm, turnover: turnover, black: black, sector: sector, t: t };
   }
 
   function showCategory() {
@@ -66,7 +73,8 @@
     var c = category();
     var label = { EME: "Exempted Micro Enterprise (EME)", QSE: "Qualifying Small Enterprise (QSE)", Generic: "Generic (large) entity" }[c.cat];
     var txt = "<strong>" + label + "</strong>";
-    if (c.auto !== null) txt += "<span>You qualify for an automatic <b>" + LEVELS[c.auto][1] + "</b> with a sworn affidavit. You can see your result now, or tick the box below to score your Skills Development as well.</span>";
+    if (c.confirm) txt = "<strong>" + label + " (indicative)</strong><span>" + (c.sector === "unsure" ? "You are not sure which sector code applies" : c.sector === "mining" ? "Mining is measured under the Mining Charter" : "Your sector code has its own rules") + ", so we do not show an automatic level. The next step scores your Skills Development element as a guide, and our team will confirm your category and level.</span>";
+    else if (c.auto !== null) txt += "<span>You may qualify for an automatic <b>" + LEVELS[c.auto][1] + "</b> with a sworn affidavit. You can see your result now, or tick the box below to score your Skills Development as well.</span>";
     else txt += "<span>You will be measured on the <b>" + (c.cat === "QSE" ? "QSE" : "Generic") + " scorecard</b>. The next step scores your Skills Development element.</span>";
     box.innerHTML = txt; box.hidden = false;
     wrap.hidden = c.auto === null;
@@ -91,10 +99,11 @@
 
   function calc() {
     var c = category(), card = usedCard(), notes = [];
+    if (c.confirm) notes.push("Category and level to be confirmed by a Skills College specialist: an automatic level is not shown for this sector.");
     if (SECTOR_NOTES[c.sector]) notes.push(SECTOR_NOTES[c.sector]);
     var res = { c: c, card: card, auto: c.auto, notes: notes, rows: [], sd: null };
     if (c.auto !== null) {
-      notes.unshift(c.cat + " with " + c.black + "% black ownership: automatic " + LEVELS[c.auto][1] + " (" + LEVELS[c.auto][2] + " procurement recognition) on a sworn affidavit, valid for 12 months.");
+      notes.unshift(c.cat + " with " + c.black + "% black ownership: potential automatic " + LEVELS[c.auto][1] + " (" + LEVELS[c.auto][2] + " procurement recognition) on a sworn affidavit, valid for 12 months.");
       if (c.cat === "EME" && c.black < 51) notes.push("EMEs that are less than 51% black owned are Level 4 by default. Being measured on the QSE scorecard could improve this, and Skills Development is one of the elements you can control.");
       if (card === "auto") return res;
     }
@@ -163,7 +172,7 @@
     if (seta && seta !== "Not sure") html += '<p class="muted small">Your SETA: <strong>' + esc(seta) + "</strong>. Submit your WSP and ATR on time to claim skills development points and the mandatory grant.</p>";
     html += '<h3 class="mt-m">Where we can help</h3><div class="result-help">' +
       [["Learnerships & internships", "/for-employers/learnerships-internships/"], ["Higher education bursaries", "/for-employers/higher-education-bursaries/"], ["Disability Skills Development", "/for-employers/disability-skills-development/"]]
-        .map(function (h) { return '<a class="card linked" href="' + h[1] + '"><span class="kicker">Skills development</span><h4>' + esc(h[0]) + '</h4><span class="text-link">Learn more <span class="arrow" aria-hidden="true">&rarr;</span></span></a>'; }).join("") + "</div>";
+        .map(function (h) { return '<a class="card linked" href="' + h[1] + '"><span class="kicker">Skills development</span><h4>' + esc(h[0]) + '</h4><span class="text-link">Learn about ' + esc(h[0].toLowerCase()) + ' <span class="arrow" aria-hidden="true">&rarr;</span></span></a>'; }).join("") + "</div>";
     html += '<p class="sent ' + (sent ? "ok" : "warn") + '">' + (sent ? "Your results have been sent to the Skills College team" + (ref ? " (reference " + esc(ref) + ")" : "") + ". We will be in touch to talk you through them." : "We could not send your results automatically. Please email them to sales@skillscollege.co.za or call 012 541 0100.") + "</p>";
     html += '<p class="disclaimer">This is an indicative estimate based on the information you entered and the Amended Codes of Good Practice. It is not a B-BBEE certificate or verification.</p>';
     html += '<div class="actions"><a class="btn btn-orange" href="/contact/?topic=b-bbee">Get a full B-BBEE assessment <span class="arrow" aria-hidden="true">&rarr;</span></a><button type="button" class="btn btn-outline" data-restart>Edit my answers</button></div>';
@@ -180,7 +189,7 @@
     var inputs = {};
     INPUT_IDS.forEach(function (id) { var el = $(id); if (el && el.value !== "") inputs[id] = num(id); });
     var sectorLabel = $("sector").options[$("sector").selectedIndex].text;
-    var level = res.auto !== null ? LEVELS[res.auto][1] + " (automatic)" : "Not calculated (Skills Development check)";
+    var level = res.auto !== null ? LEVELS[res.auto][1] + " (potential automatic)" : res.c.confirm ? "To be confirmed by specialist (" + res.c.sector + ")" : "Not calculated (Skills Development check)";
     var payload = {
       company: $("company").value, contact: $("contact").value, email: $("email").value, phone: $("phone").value, role: $("role").value,
       sector: sectorLabel, seta: $("seta").value, turnover: num("turnover"), category: res.c.cat,
@@ -217,7 +226,7 @@
   var LAST = 2, cur = 1;
   var prev = form.querySelector("[data-prev]"), next = form.querySelector("[data-next]"), skipNote = form.querySelector("[data-skip-note]");
   function go(n) {
-    cur = n;
+    cur = n; consentOnly = false;
     steps.forEach(function (fs) { fs.hidden = +fs.getAttribute("data-step") !== n; fs.classList.remove("consent-only"); });
     form.querySelectorAll(".calc-steps li").forEach(function (li) {
       var s = +li.getAttribute("data-goto");
@@ -234,15 +243,47 @@
     next.innerHTML = (cur === LAST || (cur === 1 && auto)) ? 'See my result <span class="arrow" aria-hidden="true">&rarr;</span>' : 'Next <span class="arrow" aria-hidden="true">&rarr;</span>';
     form.querySelector(".calc-steps").classList.toggle("auto", auto);
   }
+  function fieldError(id, msg) {
+    var f = $(id).closest(".field"); f.classList.toggle("invalid", !!msg);
+    var e = f.querySelector(".form-error");
+    if (msg) { if (!e) { f.insertAdjacentHTML("beforeend", '<span class="form-error" role="alert"></span>'); e = f.querySelector(".form-error"); } e.textContent = msg; }
+    return !msg;
+  }
+  var NUM_MSG = "Enter numbers only, for example 1 250 000.";
+  function checkNumbers(ids, opts) {
+    var ok = true;
+    ids.forEach(function (id) {
+      if (!$(id) || $(id).closest("[hidden]")) return;
+      var v = parse(id), msg = "";
+      if (isNaN(v)) msg = NUM_MSG;
+      else if (opts.pct && opts.pct.indexOf(id) >= 0 && v > 100) msg = "A percentage cannot be more than 100.";
+      else if (opts.whole && opts.whole.indexOf(id) >= 0 && v % 1) msg = "Enter a whole number of people.";
+      if (!fieldError(id, msg)) ok = false;
+    });
+    return ok;
+  }
+  function validStep2() {
+    var ok = checkNumbers(["sd_payroll", "sd_emp", "sd_lp", "sd_lp_f", "sd_burs", "sd_dis", "sd_learners", "sd_completed", "sd_absorbed"], { whole: ["sd_emp", "sd_learners", "sd_completed", "sd_absorbed"] });
+    if (ok) {
+      var spend = num("sd_lp") + num("sd_burs") + num("sd_dis"), la = num("sd_payroll");
+      if (num("sd_absorbed") > num("sd_completed")) ok = fieldError("sd_absorbed", "Learners absorbed cannot be more than learners who completed.") && ok;
+      if (num("sd_emp") && !$("sd_learners").closest("[hidden]") && num("sd_learners") > num("sd_emp")) ok = fieldError("sd_learners", "Learners counted here must be included in your total number of employees, so this cannot be higher.") && ok;
+      if (!$("sd_lp_f").closest("[hidden]") && num("sd_lp_f") > spend) ok = fieldError("sd_lp_f", "Spend on black women is part of your total skills spend, so it cannot be higher than the spend entered above.") && ok;
+      if (la && spend > la * 2) ok = fieldError("sd_lp", "Your skills spend is more than double your payroll. Please check the amounts.") && ok;
+    }
+    if (!ok) { var f = form.querySelector(".invalid input"); if (f) f.focus(); }
+    return ok;
+  }
   function validStep1() {
     var ok = true;
     ["company", "contact", "email"].forEach(function (id) {
       var el = $(id), bad = !el.value.trim() || (id === "email" && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(el.value.trim()));
       el.closest(".field").classList.toggle("invalid", bad); if (bad) ok = false;
     });
-    var t = $("turnover"), badT = !num("turnover");
-    t.closest(".field").classList.toggle("invalid", badT);
-    if (badT) { ok = false; if (!t.closest(".field").querySelector(".form-error")) t.closest(".field").insertAdjacentHTML("beforeend", '<span class="form-error">Enter your annual turnover.</span>'); }
+    var tv = parse("turnover");
+    if (!fieldError("turnover", isNaN(tv) ? NUM_MSG : !tv ? "Enter your annual turnover." : "")) ok = false;
+    if (!checkNumbers(["own_black", "own_bw"], { pct: ["own_black", "own_bw"] })) ok = false;
+    else if (num("own_bw") > num("own_black")) { fieldError("own_bw", "Voting rights held by black women are part of black ownership, so this cannot be higher than black ownership."); ok = false; }
     if (!ok) { var f = form.querySelector(".invalid input, .invalid select"); if (f) f.focus(); }
     return ok;
   }
@@ -271,7 +312,7 @@
         return finish();
       }
     }
-    if (cur === LAST) return finish();
+    if (cur === LAST) { if (!consentOnly && !validStep2()) return; return finish(); }
     go(cur + 1);
   });
   prev.addEventListener("click", function () { consentOnly = false; go(Math.max(1, cur - 1)); });
@@ -282,10 +323,11 @@
   $("use_full").addEventListener("change", function () { applyScorecardFields(); go(1); });
   $("consent").addEventListener("change", consentBox);
   form.addEventListener("input", function (e) { var f = e.target.closest(".field.invalid"); if (f) f.classList.remove("invalid"); });
+  form.querySelectorAll("input[inputmode=decimal]").forEach(function (inp) { inp.addEventListener("blur", function () { if (isNaN(parse(inp.id))) fieldError(inp.id, NUM_MSG); }); });
   form.addEventListener("submit", function (e) { e.preventDefault(); next.click(); });
   form.querySelectorAll(".num.has-pre input").forEach(function (inp) {
     if (inp.closest(".num").querySelector(".pre").textContent !== "R") return;
-    inp.addEventListener("blur", function () { var v = num(inp.id); inp.value = v ? Math.round(v).toLocaleString("en-ZA") : ""; });
+    inp.addEventListener("blur", function () { var raw = parse(inp.id); if (isNaN(raw)) return; inp.value = raw ? Math.round(raw).toLocaleString("en-ZA") : ""; });
   });
   go(1);
 })();

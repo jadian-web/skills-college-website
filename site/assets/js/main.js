@@ -24,18 +24,23 @@
   if (form) {
     var params = new URLSearchParams(window.location.search);
     var topicMap = {
-      "qcto": "QCTO", "qcto-qualification": "QCTO", "qcto-assessment": "QCTO",
+      "qcto": "QCTO qualifications", "qcto-qualification": "QCTO qualifications", "qcto-assessment": "QCTO assessment",
       "strategy": "Skills Development Strategy", "learnerships": "Learnerships & Internships",
-      "bursaries": "Higher Education Bursaries", "ignite": "Higher Education Bursaries",
+      "bursaries": "Higher Education Bursaries", "ignite": "Ignite Bursaries",
       "disability": "Disability Skills Development", "absorption": "B-BBEE Absorption",
-      "training": "Accredited Training", "b-bbee": "B-BBEE scorecard advice", "events": "Events"
+      "training": "Accredited Training", "b-bbee": "B-BBEE scorecard advice", "events": "Events",
+      "yes": "YES programme", "esd": "Enterprise, supplier and socio-economic development", "certificate": "Certificates and accreditation", "general": "General enquiry"
     };
-    var topic = params.get("topic");
+    var topic = params.get("topic"), intent = params.get("intent"), about = (params.get("q") || "").slice(0, 150);
+    if (topic === "qcto" && intent === "assessment") topic = "qcto-assessment";
     var select = form.querySelector("#interest");
     if (topic && topicMap[topic] && select) select.value = topicMap[topic];
+    var note = form.parentNode.querySelector("[data-topic-note]");
+    if (note && select && select.value) { note.textContent = "Your enquiry is about: " + select.value + (about ? " (" + about + ")" : "") + ". You can change this below."; note.hidden = false; }
+    var msg = form.querySelector("#message");
+    if (about && msg && !msg.value) msg.value = "I would like more information about " + about + ".";
     var source = form.querySelector("#source-page");
-    var intent = params.get("intent");
-    if (source) source.value = (topic ? "topic=" + topic + " | " : "") + (intent ? "intent=" + intent + " | " : "") + (document.referrer || "direct");
+    if (source) source.value = (topic ? "topic=" + topic + " | " : "") + (intent ? "intent=" + intent + " | " : "") + (about ? "item=" + about + " | " : "") + (document.referrer || "direct");
 
     var started = Date.now(), alertBox = form.querySelector("[data-form-alert]");
     var check = function (el) {
@@ -90,24 +95,6 @@
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
 
   var renderers = {
-    qualifications: function (q) {
-      return '<article class="result-card"><h3>' + esc(q.title) + '</h3>' +
-        (q.status ? '<span class="status-badge">' + esc(q.status) + '</span>' : "") +
-        '<dl class="result-meta">' +
-        '<dt>Qualification ID</dt><dd>' + esc(q.id) + '</dd>' +
-        '<dt>NQF level</dt><dd>' + esc(q.nqf) + '</dd>' +
-        '<dt>Credits</dt><dd>' + esc(q.credits) + '</dd>' +
-        '<dt>Sector or occupational field</dt><dd>' + esc(q.sector) + '</dd>' +
-        (q.duration ? '<dt>Programme duration</dt><dd>' + esc(q.duration) + '</dd>' : "") +
-        '</dl><p class="muted">' + esc(q.summary) + '</p>' +
-        '<a class="text-link mt-s" href="/contact/?topic=qcto-qualification">Enquire about this qualification <span class="arrow" aria-hidden="true">&rarr;</span></a></article>';
-    },
-    team: function (p) {
-      return '<article class="person-card">' + (p.photo ? '<img src="' + esc(p.photo) + '" alt="' + esc(p.name) + '" loading="lazy">' : "") +
-        '<div class="body"><h3>' + esc(p.name) + '</h3><p class="role">' + esc(p.role) + '</p><p>' + esc(p.expertise) + '</p>' +
-        (p.linkedin ? '<a class="text-link mt-s" href="' + esc(p.linkedin) + '" target="_blank" rel="noopener">LinkedIn <span class="arrow" aria-hidden="true">&rarr;</span></a>' : "") +
-        '</div></article>';
-    },
     articles: function (a) {
       var href = a.url || ("/resources/article/?slug=" + encodeURIComponent(a.slug));
       return '<article class="photo-card article-card" data-category="' + esc(a.category) + '" style="position:relative">' +
@@ -115,80 +102,74 @@
         '<div class="body"><p class="meta"><span class="cat">' + esc(a.category) + '</span> &middot; ' + esc(fmtDate(a.date)) + '</p>' +
         '<h3>' + esc(a.title) + '</h3><p>' + esc(a.summary) + '</p>' +
         '<a class="text-link stretched" href="' + esc(href) + '">Read article <span class="arrow" aria-hidden="true">&rarr;</span></a></div></article>';
-    },
-    stories: function (s) {
-      return '<article class="card linked"><p class="kicker">' + esc(s.type) + '</p><h3 class="mt-s">' + esc(s.title) + '</h3><p>' + esc(s.summary) + '</p>' +
-        (s.url ? '<a class="text-link stretched" href="' + esc(s.url) + '">Read the story <span class="arrow" aria-hidden="true">&rarr;</span></a>' : "") + '</article>';
     }
   };
+  renderers.cases = renderers.articles;
+  var CASE_CAT = "Case Studies & Impact";
+  var postsPromise = null;
+  function getPosts() {
+    if (!postsPromise) postsPromise = fetch("/api/posts").then(function (r) { if (!r.ok) throw new Error("posts"); return r.json(); });
+    return postsPromise;
+  }
 
+  /* ---------- Article lists (Resources, Case studies) with loading, error, filter and empty states ---------- */
   document.querySelectorAll("[data-collection]").forEach(function (box) {
     var name = box.getAttribute("data-collection");
     var list = box.querySelector("[data-items]");
     var empty = box.querySelector("[data-empty]");
-    var load = name === "articles"
-      ? fetch("/api/posts").then(function (r) { if (!r.ok) throw 0; return r.json(); })
-          .catch(function () { return fetch("/assets/data/articles.json").then(function (r) { return r.ok ? r.json() : []; }); })
-      : fetch("/assets/data/" + name + ".json", { cache: "no-cache" }).then(function (r) { return r.ok ? r.json() : []; });
-    load
-      .then(function (items) {
-        if (!Array.isArray(items) || !items.length) return;
-        box.__items = items;
-        list.innerHTML = items.map(renderers[name]).join("");
-        list.hidden = false;
-        if (empty) empty.hidden = true;
-        box.dispatchEvent(new CustomEvent("collection:ready"));
-      })
-      .catch(function () { /* keep the empty state */ });
+    var status = document.createElement("p");
+    status.className = "results-count"; status.setAttribute("role", "status"); status.setAttribute("aria-live", "polite");
+    status.textContent = "Loading articles…";
+    box.insertBefore(status, box.firstChild);
+    if (empty) empty.hidden = true;
+    getPosts().then(function (posts) {
+      var items = (Array.isArray(posts) ? posts : []).filter(function (p) { return name === "cases" ? p.category === CASE_CAT : true; });
+      box.__items = items;
+      if (!items.length) { status.textContent = ""; if (empty) empty.hidden = false; return; }
+      list.innerHTML = items.map(renderers[name]).join("");
+      list.hidden = false;
+      status.textContent = items.length + (items.length === 1 ? " article" : " articles");
+      box.dispatchEvent(new CustomEvent("collection:ready"));
+    }).catch(function () {
+      status.textContent = "Articles could not be loaded right now. Please refresh the page or try again later.";
+    });
   });
 
-  /* Resources category chips */
+  /* Resources category chips: count, "no articles in this topic" message and reset */
   var chipWrap = document.querySelector("[data-chips]");
-  if (chipWrap) {
+  var artBox = document.querySelector('[data-collection="articles"]');
+  if (chipWrap && artBox) {
+    var none = document.createElement("div");
+    none.className = "events-empty"; none.hidden = true;
+    none.innerHTML = '<h3>No articles in this topic yet</h3><p>Choose another topic or <button type="button" class="link-like text-underline" data-chip-reset>show all articles</button>.</p>';
+    artBox.appendChild(none);
+    var applyChip = function (cat) {
+      var cards = artBox.querySelectorAll(".article-card"), n = 0;
+      cards.forEach(function (card) { var show = !cat || card.getAttribute("data-category") === cat; card.hidden = !show; if (show) n++; });
+      var st = artBox.querySelector(".results-count");
+      if (st && artBox.__items && artBox.__items.length) st.textContent = (cat ? n + " of " + cards.length : n) + (n === 1 ? " article" : " articles") + (cat ? " in " + cat : "");
+      none.hidden = !(artBox.__items && artBox.__items.length) || n > 0;
+    };
     chipWrap.addEventListener("click", function (e) {
       var chip = e.target.closest(".chip"); if (!chip) return;
       var on = chip.getAttribute("aria-pressed") !== "true";
       chipWrap.querySelectorAll(".chip").forEach(function (c) { c.setAttribute("aria-pressed", "false"); });
       chip.setAttribute("aria-pressed", on ? "true" : "false");
-      var cat = on ? chip.textContent.trim() : null;
-      document.querySelectorAll(".article-card").forEach(function (card) {
-        card.hidden = !!cat && card.getAttribute("data-category") !== cat;
-      });
+      applyChip(on ? chip.textContent.trim() : null);
+      var target = document.getElementById("latest"); if (target && on) target.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    none.addEventListener("click", function (e) {
+      if (!e.target.closest("[data-chip-reset]")) return;
+      chipWrap.querySelectorAll(".chip").forEach(function (c) { c.setAttribute("aria-pressed", "false"); });
+      applyChip(null);
     });
   }
 
-  /* Qualification filters */
-  var filter = document.querySelector("[data-filter]");
-  if (filter) {
-    var box = document.querySelector('[data-collection="qualifications"]');
-    var apply = function () {
-      var items = box.__items || [];
-      var f = {
-        sector: filter.querySelector("#f-sector").value,
-        occupation: filter.querySelector("#f-occupation").value.toLowerCase().trim(),
-        nqf: filter.querySelector("#f-nqf").value,
-        q: filter.querySelector("#f-keyword").value.toLowerCase().trim()
-      };
-      var shown = items.filter(function (it) {
-        var text = (it.title + " " + it.summary + " " + it.occupation + " " + it.id).toLowerCase();
-        return (!f.sector || it.sector === f.sector) &&
-          (!f.occupation || String(it.occupation || "").toLowerCase().indexOf(f.occupation) > -1) &&
-          (!f.nqf || String(it.nqf) === f.nqf) && (!f.q || text.indexOf(f.q) > -1);
-      });
-      var list = box.querySelector("[data-items]");
-      list.innerHTML = shown.length ? shown.map(renderers.qualifications).join("") :
-        '<p class="muted">No qualifications match these filters. Clear a filter or talk to a QCTO specialist.</p>';
-    };
-    box.addEventListener("collection:ready", function () {
-      var sectors = {}, levels = {};
-      box.__items.forEach(function (it) { if (it.sector) sectors[it.sector] = 1; if (it.nqf) levels[it.nqf] = 1; });
-      var s = filter.querySelector("#f-sector"), n = filter.querySelector("#f-nqf");
-      Object.keys(sectors).sort().forEach(function (k) { s.insertAdjacentHTML("beforeend", "<option>" + esc(k) + "</option>"); });
-      Object.keys(levels).sort().forEach(function (k) { n.insertAdjacentHTML("beforeend", "<option>" + esc(k) + "</option>"); });
-    });
-    filter.addEventListener("submit", function (e) { e.preventDefault(); apply(); });
-    filter.addEventListener("change", apply);
-  }
+  /* Case Studies link in the About menu appears once a case study is published */
+  var needsCases = document.querySelectorAll("[data-needs-cases]");
+  if (needsCases.length) getPosts().then(function (posts) {
+    if ((posts || []).some(function (p) { return p.category === CASE_CAT; })) needsCases.forEach(function (el) { el.hidden = false; });
+  }).catch(function () {});
 
   /* ---------- Blog article page ---------- */
   var art = document.querySelector("[data-article]");
@@ -216,7 +197,7 @@
       if (p.audience === "learners") {
         document.querySelector("[data-cta-h]").textContent = "Looking for a learnership, bursary or training opportunity?";
         document.querySelector("[data-cta-p]").textContent = "See current opportunities, understand what you qualify for and know how to apply.";
-        var cb = document.querySelector("[data-cta-btn]"); cb.href = "https://my.skillscollege.co.za"; cb.firstChild.textContent = "Find opportunities ";
+        var cb = document.querySelector("[data-cta-btn]"); cb.href = "/learners/opportunities/"; cb.firstChild.textContent = "Find opportunities ";
       }
       art.querySelector("[data-article-loading]").hidden = true; art.querySelector("[data-article-body]").hidden = false;
       var cl = art.querySelector("[data-copy-link]"), note = art.querySelector("[data-copy-note]");
@@ -412,12 +393,15 @@
         q("[data-event-detail]").hidden = false;
       }).catch(function () { q("[data-events-list]").hidden = false; if (evHero) evHero.hidden = false; });
     }
+    var evStatus = q("[data-events-status]");
     if (!evSlug) fetch("/api/events").then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (list) {
-      if (!list || !list.length) return;
-      q("[data-events-empty]").hidden = true;
+      if (evStatus) evStatus.textContent = "";
+      if (!list || !list.length) { q("[data-events-empty]").hidden = false; return; }
       var up = list.filter(function (e) { return e.date >= today; }).sort(function (a, b) { return a.date.localeCompare(b.date); });
       var past = list.filter(function (e) { return e.date < today; });
-      if (up.length) { q("[data-upcoming-items]").innerHTML = up.map(card).join(""); q("[data-upcoming]").hidden = false; }
+      q("[data-upcoming]").hidden = false;
+      if (up.length) q("[data-upcoming-items]").innerHTML = up.map(card).join("");
+      else q("[data-upcoming-items]").innerHTML = '<p class="events-none">There are no upcoming events at the moment. Highlights from recent events are below.</p>';
       if (past.length) { q("[data-past-items]").innerHTML = past.map(card).join(""); q("[data-past]").hidden = false; }
       var types = []; list.forEach(function (e) { if (types.indexOf(e.type) < 0) types.push(e.type); });
       if (types.length > 1) {
@@ -432,7 +416,7 @@
           ["[data-upcoming]", "[data-past]"].forEach(function (sel) { var g = q(sel); if (!g.querySelector(".event-card")) return; g.hidden = !g.querySelector(".event-card:not([hidden])"); });
         });
       }
-    }).catch(function () {});
+    }).catch(function () { if (evStatus) evStatus.textContent = "Events could not be loaded right now. Please refresh the page or try again later."; });
   }
   /* ---------- Meet the team (profiles managed in the portal) ---------- */
   var teamPage = document.querySelector("[data-team-page]");
@@ -510,5 +494,180 @@
   }
   document.querySelectorAll("[data-cookie-settings]").forEach(function (b) {
     b.addEventListener("click", function () { if (cookieBar) { cookieBar.hidden = false; var f = cookieBar.querySelector("button"); if (f) f.focus(); } });
+  });
+  /* ---------- Learner opportunities (managed in the portal) ---------- */
+  var oppPage = document.querySelector("[data-opps-page]");
+  if (oppPage) {
+    var oq = function (sel) { return oppPage.querySelector(sel); };
+    var oppId = new URLSearchParams(location.search).get("id");
+    var todayIso = new Date().toISOString().slice(0, 10);
+    var closed = function (o) { return o.closingDate && o.closingDate < todayIso; };
+    var oppCard = function (o) {
+      return '<article class="opp-card' + (closed(o) ? " is-closed" : "") + '" data-type="' + esc(o.type) + '" data-loc="' + esc(o.location) + '">' +
+        '<div class="opp-top"><span class="pill-cat">' + esc(o.type) + "</span>" + (closed(o) ? '<span class="pill closed">Closed</span>' : (o.closingDate ? '<span class="pill">Closes ' + esc(fmtDate(o.closingDate)) + "</span>" : '<span class="pill">Open</span>')) + "</div>" +
+        "<h3>" + esc(o.title) + "</h3>" + (o.location ? '<p class="meta">' + esc(o.location) + (o.duration ? " &middot; " + esc(o.duration) : "") + "</p>" : "") +
+        (o.summary ? "<p>" + esc(o.summary) + "</p>" : "") +
+        '<a class="text-link stretched" href="/learners/opportunities/?id=' + encodeURIComponent(o.id) + '">View ' + esc(o.title) + ' <span class="arrow" aria-hidden="true">&rarr;</span></a></article>';
+    };
+    if (oppId) {
+      oq("[data-opps-list]").hidden = true;
+      var oh = document.querySelector(".hero"); if (oh) oh.hidden = true;
+      fetch("/api/opportunities/" + encodeURIComponent(oppId)).then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (o) {
+        var f = function (k) { return oppPage.querySelector('[data-of="' + k + '"]'); };
+        document.title = o.title + " | Skills College";
+        setMeta(o.title + " | Skills College", o.summary, "/learners/opportunities/?id=" + encodeURIComponent(o.id));
+        f("type").textContent = o.type; f("title").textContent = o.title; f("summary").textContent = o.summary || ""; f("summary").hidden = !o.summary;
+        var facts = [["Location", o.location], ["Closing date", o.closingDate ? fmtDate(o.closingDate) + (closed(o) ? " (closed)" : "") : "Open until filled"], ["Starts", o.startDate ? fmtDate(o.startDate) : ""], ["Duration", o.duration], ["Stipend", o.stipend]].filter(function (x) { return x[1]; });
+        f("facts").innerHTML = facts.slice(0, 3).map(function (x) { return "<li><span><strong>" + esc(x[0]) + ":</strong> " + esc(x[1]) + "</span></li>"; }).join("");
+        f("keyfacts").innerHTML = facts.map(function (x) { return "<dt>" + esc(x[0]) + "</dt><dd>" + esc(x[1]) + "</dd>"; }).join("");
+        f("description").innerHTML = o.description || ""; /* cleaned on the server */
+        [["eligibility", "li"], ["documents", "li"], ["selection", "li"]].forEach(function (k) {
+          var arr = o[k[0]] || [];
+          if (arr.length) { f(k[0]).innerHTML = arr.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join(""); f(k[0] + "-wrap").hidden = false; }
+        });
+        var apply = "";
+        if (closed(o)) apply = '<p class="pill closed">Applications for this opportunity have closed.</p>';
+        else if (o.applyUrl) apply = '<a class="btn btn-orange" href="' + esc(o.applyUrl) + '"' + (/^https?:/.test(o.applyUrl) ? ' target="_blank" rel="noopener"' : "") + ">Apply now <span class=\"arrow\" aria-hidden=\"true\">&rarr;</span></a>";
+        else if (o.applyEmail) apply = '<p>Email your application and documents to:</p><p><a class="email-big" href="mailto:' + esc(o.applyEmail) + "?subject=" + encodeURIComponent("Application: " + o.title) + '">' + esc(o.applyEmail) + "</a></p>";
+        else apply = '<p>Contact our recruitment team to apply: <a href="tel:+27824875996">082 487 5996</a> or <a href="mailto:recruitment@skillscollege.co.za">recruitment@skillscollege.co.za</a>.</p>';
+        if (o.contact) apply += '<p class="small muted">Questions: ' + esc(o.contact) + "</p>";
+        f("apply").innerHTML = apply;
+        oq("[data-opp-detail]").hidden = false;
+      }).catch(function () {
+        oq("[data-opps-list]").hidden = false; if (oh) oh.hidden = false;
+        oq("[data-opp-count]").textContent = "That opportunity is no longer available. Browse the current opportunities below.";
+        loadOpps();
+      });
+    } else loadOpps();
+    function loadOpps() {
+      var params = new URLSearchParams(location.search);
+      fetch("/api/opportunities").then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (list) {
+        var grid = oq("[data-opps]"), count = oq("[data-opp-count]");
+        if (!list.length) { count.textContent = ""; oq("[data-opp-empty]").hidden = false; oq("[data-opp-filters]").hidden = true; return; }
+        list.sort(function (a, b) { return (closed(a) - closed(b)) || String(a.closingDate || "9999").localeCompare(String(b.closingDate || "9999")); });
+        grid.innerHTML = list.map(oppCard).join("");
+        var types = [], locs = [];
+        list.forEach(function (o) { if (o.type && types.indexOf(o.type) < 0) types.push(o.type); if (o.location && locs.indexOf(o.location) < 0) locs.push(o.location); });
+        var ts = oq("#opp-type"), ls = oq("#opp-loc");
+        types.sort().forEach(function (t) { ts.insertAdjacentHTML("beforeend", "<option>" + esc(t) + "</option>"); });
+        locs.sort().forEach(function (t) { ls.insertAdjacentHTML("beforeend", "<option>" + esc(t) + "</option>"); });
+        if (params.get("type")) ts.value = params.get("type");
+        var applyF = function () {
+          var q = oq("#opp-q").value.toLowerCase().trim(), t = ts.value, l = ls.value, n = 0;
+          grid.querySelectorAll(".opp-card").forEach(function (c, i) {
+            var o = list[i], txt = (o.title + " " + o.summary + " " + o.location + " " + o.type).toLowerCase();
+            var show = (!t || o.type === t) && (!l || o.location === l) && (!q || txt.indexOf(q) > -1);
+            c.hidden = !show; if (show) n++;
+          });
+          var open = list.filter(function (o) { return !closed(o); }).length;
+          count.textContent = n + " of " + list.length + " opportunit" + (list.length === 1 ? "y" : "ies") + " shown" + (open < list.length ? " (" + open + " open)" : "");
+          oq("[data-opp-none]").hidden = n > 0;
+        };
+        oq("[data-opp-filters]").addEventListener("input", applyF);
+        oq("[data-opp-filters]").addEventListener("submit", function (e) { e.preventDefault(); applyF(); });
+        oq("[data-opp-reset]").addEventListener("click", function () { oq("[data-opp-filters]").reset(); applyF(); });
+        applyF();
+      }).catch(function () { oq("[data-opp-count]").textContent = "Opportunities could not be loaded right now. Please refresh the page, or contact recruitment on 082 487 5996."; });
+    }
+  }
+
+  /* ---------- QCTO qualification directory (managed in the portal) ---------- */
+  var qualPage = document.querySelector("[data-quals-page]");
+  if (qualPage) {
+    var qq = function (sel) { return qualPage.querySelector(sel); };
+    fetch("/api/qualifications").then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (list) {
+      var box = qq("[data-quals]"), count = qq("[data-qual-count]");
+      if (!list.length) { count.textContent = ""; qq("[data-qual-empty]").hidden = false; qq("[data-qual-filters]").hidden = true; return; }
+      box.innerHTML = list.map(function (q) {
+        var dl = [["Qualification ID", q.qualId], ["NQF level", q.nqf], ["Credits", q.credits], ["Duration", q.duration], ["Delivery", [q.mode, q.delivery].filter(Boolean).join(", ")], ["Entry requirements", q.entry], ["SETA / quality partner", q.seta], ["Scope", q.scope]]
+          .filter(function (x) { return x[1]; }).map(function (x) { return "<dt>" + esc(x[0]) + "</dt><dd>" + esc(x[1]) + "</dd>"; }).join("");
+        return '<article class="qual-card"><div class="qual-top"><span class="pill-cat">' + esc(q.type) + '</span><span class="pill avail-' + esc(String(q.availability).toLowerCase().replace(/[^a-z]+/g, "-")) + '">' + esc(q.availability) + "</span></div>" +
+          "<h3>" + esc(q.title) + "</h3>" + (q.sector ? '<p class="meta">' + esc(q.sector) + "</p>" : "") + (q.summary ? "<p>" + esc(q.summary) + "</p>" : "") +
+          '<dl class="qual-facts">' + dl + "</dl>" +
+          '<a class="text-link" href="/contact/?topic=qcto-qualification&amp;q=' + encodeURIComponent(q.title) + '#enquiry">Enquire about ' + esc(q.title) + ' <span class="arrow" aria-hidden="true">&rarr;</span></a></article>';
+      }).join("");
+      var add = function (sel, vals) { vals.forEach(function (v) { qq(sel).insertAdjacentHTML("beforeend", "<option>" + esc(v) + "</option>"); }); };
+      var uniq = function (k) { var o = []; list.forEach(function (q) { if (q[k] && o.indexOf(q[k]) < 0) o.push(q[k]); }); return o.sort(function (a, b) { return String(a).localeCompare(String(b), undefined, { numeric: true }); }); };
+      add("#q-nqf", uniq("nqf")); add("#q-type", uniq("type")); add("#q-avail", uniq("availability"));
+      var applyQ = function () {
+        var t = qq("#q-q").value.toLowerCase().trim(), nqf = qq("#q-nqf").value, ty = qq("#q-type").value, av = qq("#q-avail").value, n = 0;
+        box.querySelectorAll(".qual-card").forEach(function (c, i) {
+          var q = list[i], txt = (q.title + " " + q.qualId + " " + q.sector + " " + q.summary).toLowerCase();
+          var show = (!t || txt.indexOf(t) > -1) && (!nqf || q.nqf === nqf) && (!ty || q.type === ty) && (!av || q.availability === av);
+          c.hidden = !show; if (show) n++;
+        });
+        count.textContent = n + " of " + list.length + (list.length === 1 ? " qualification" : " qualifications") + " shown";
+        qq("[data-qual-none]").hidden = n > 0;
+      };
+      qq("[data-qual-filters]").addEventListener("input", applyQ);
+      qq("[data-qual-filters]").addEventListener("submit", function (e) { e.preventDefault(); applyQ(); });
+      qq("[data-qual-reset]").addEventListener("click", function () { qq("[data-qual-filters]").reset(); applyQ(); });
+      applyQ();
+    }).catch(function () { qq("[data-qual-count]").textContent = "The directory could not be loaded right now. Please refresh the page or ask our team."; });
+  }
+
+  /* ---------- Home: partner badges and client testimonials (managed in the portal) ---------- */
+  var partnersSec = document.querySelector("[data-partners]");
+  if (partnersSec) {
+    fetch("/api/partners").then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (list) {
+      if (!list.length) return;
+      var track = partnersSec.querySelector("[data-partner-track]");
+      var badge = function (p, dup) {
+        var img = '<img src="' + esc(p.logo) + '" alt="' + (dup ? "" : esc(p.title)) + '" loading="lazy">';
+        var inner = p.url ? '<a href="' + esc(p.url) + '" target="_blank" rel="noopener"' + (dup ? ' tabindex="-1"' : "") + ">" + img + "</a>" : img;
+        return '<li class="partner-badge"' + (dup ? ' aria-hidden="true"' : "") + (p.note && !dup ? ' title="' + esc(p.note) + '"' : "") + ">" + inner + "</li>";
+      };
+      var html = list.map(function (p) { return badge(p, false); }).join("");
+      var pause = partnersSec.querySelector("[data-partner-pause]");
+      if (list.length < 4) { track.classList.add("static"); track.innerHTML = html; if (pause) pause.parentNode.hidden = true; }
+      else {
+        // the list is repeated once so the loop is seamless; the copy is hidden from screen readers
+        track.innerHTML = html + list.map(function (p) { return badge(p, true); }).join("");
+        track.style.setProperty("--partner-speed", Math.max(20, list.length * 5) + "s");
+        pause.addEventListener("click", function () {
+          var c = partnersSec.querySelector("[data-partner-carousel]"), on = c.classList.toggle("paused");
+          pause.textContent = on ? "Play" : "Pause"; pause.setAttribute("aria-pressed", on ? "true" : "false");
+        });
+      }
+      partnersSec.hidden = false;
+    }).catch(function () {});
+  }
+  var testiSec = document.querySelector("[data-testimonials]");
+  if (testiSec) {
+    fetch("/api/testimonials").then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (list) {
+      if (!list.length) return;
+      list = list.slice(0, 6);
+      var grid = testiSec.querySelector("[data-testimonial-items]");
+      grid.classList.add("count-" + Math.min(list.length, 3));
+      grid.innerHTML = list.map(function (t) {
+        var who = [t.role, t.company].filter(Boolean).join(", ");
+        return '<figure class="testimonial"><blockquote><p>' + esc(t.quote) + "</p></blockquote><figcaption>" +
+          (t.photo ? '<img src="' + esc(t.photo) + '" alt="" loading="lazy">' : "") +
+          "<div>" + (t.name ? "<strong>" + esc(t.name) + "</strong>" : "") + (who ? "<span>" + esc(who) + "</span>" : "") + "</div></figcaption></figure>";
+      }).join("");
+      testiSec.hidden = false;
+    }).catch(function () {});
+  }
+
+  /* ---------- Certificates and documents (managed in the portal) ---------- */
+  document.querySelectorAll("[data-docs-page]").forEach(function (wrap) {
+    var cats = (wrap.getAttribute("data-doc-cats") || "").split(",");
+    var status = wrap.querySelector("[data-doc-status]"), box = wrap.querySelector("[data-docs]");
+    var kb = function (n) { return n > 1048576 ? (n / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(n / 1024)) + " KB"; };
+    fetch("/api/documents").then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (list) {
+      list = list.filter(function (d) { return cats.indexOf(d.category) > -1; });
+      status.textContent = "";
+      if (!list.length) { wrap.querySelector("[data-doc-empty]").hidden = false; return; }
+      var today = new Date().toISOString().slice(0, 10);
+      box.innerHTML = list.map(function (d) {
+        var expired = d.expires && d.expires < today;
+        return '<article class="doc-card' + (expired ? " expired" : "") + '"><div class="doc-icon" aria-hidden="true">PDF</div><div class="doc-body">' +
+          '<span class="pill-cat">' + esc(d.category) + "</span><h3>" + esc(d.title) + "</h3>" +
+          '<dl class="doc-facts">' + (d.issuer ? "<dt>Issued by</dt><dd>" + esc(d.issuer) + "</dd>" : "") + (d.scope ? "<dt>Scope</dt><dd>" + esc(d.scope) + "</dd>" : "") +
+          (d.issued || d.expires ? "<dt>Valid</dt><dd>" + (d.issued ? esc(fmtDate(d.issued)) : "") + (d.expires ? " to " + esc(fmtDate(d.expires)) : "") + (expired ? " (expired: a renewed copy is available on request)" : "") + "</dd>" : "") + "</dl>" +
+          (d.note ? '<p class="small muted">' + esc(d.note) + "</p>" : "") + "</div>" +
+          '<a class="btn btn-outline btn-sm" href="' + esc(d.file) + '" target="_blank" rel="noopener">Download ' + esc(d.title) + " (PDF" + (d.size ? ", " + kb(d.size) : "") + ")</a></article>";
+      }).join("");
+    }).catch(function () { status.textContent = ""; wrap.querySelector("[data-doc-empty]").hidden = false; });
   });
 })();

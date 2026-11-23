@@ -35,9 +35,14 @@
       <button role="tab" id="tab-content" aria-selected="false" data-tab="content">Website text</button>
       <button role="tab" id="tab-posts" aria-selected="false" data-tab="posts">Blog posts</button>
       <button role="tab" id="tab-events" aria-selected="false" data-tab="events">Events</button>
+      <button role="tab" id="tab-opportunities" aria-selected="false" data-tab="opportunities">Opportunities</button>
+      <button role="tab" id="tab-qualifications" aria-selected="false" data-tab="qualifications">Qualifications</button>
+      <button role="tab" id="tab-documents" aria-selected="false" data-tab="documents">Documents</button>
+      <button role="tab" id="tab-testimonials" aria-selected="false" data-tab="testimonials">Testimonials</button>
+      <button role="tab" id="tab-partners" aria-selected="false" data-tab="partners">Partners</button>
       <button role="tab" id="tab-team" aria-selected="false" data-tab="team">Team</button>
       <button role="tab" id="tab-account" aria-selected="false" data-tab="account">Account</button>
-      <button role="tab" id="tab-scorecards" aria-selected="false" data-tab="scorecards">Scorecard results <span class="count" id="sc-new" hidden></span></button>
+      <button role="tab" id="tab-scorecards" aria-selected="false" data-tab="scorecards">Scorecards <span class="count" id="sc-new" hidden></span></button>
     </nav>
     <div class="topbar-right">
       <a href="/" target="_blank" rel="noopener">View website</a>
@@ -348,6 +353,12 @@
       </form>
     </section>
     <!-- SCORECARD RESULTS -->
+    <section id="panel-opportunities" data-panel="opportunities" hidden><p class="muted">Loading&hellip;</p></section>
+    <section id="panel-qualifications" data-panel="qualifications" hidden><p class="muted">Loading&hellip;</p></section>
+    <section id="panel-documents" data-panel="documents" hidden><p class="muted">Loading&hellip;</p></section>
+    <section id="panel-testimonials" data-panel="testimonials" hidden><p class="muted">Loading&hellip;</p></section>
+    <section id="panel-partners" data-panel="partners" hidden><p class="muted">Loading&hellip;</p></section>
+
     <section id="panel-scorecards" data-panel="scorecards" hidden>
       <div class="panel-head">
         <div><h1>Scorecard calculator results</h1><p class="muted">Every result from the B-BBEE scorecard calculator. Each one is also emailed to sales@skillscollege.co.za through Netlify Forms.</p></div>
@@ -371,5 +382,6 @@
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <script src="console.js" defer></script>
 <script src="console-extra.js" defer></script>
+<script src="console-lists.js" defer></script>
 </body>
 </html>
